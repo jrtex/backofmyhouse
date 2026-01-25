@@ -60,3 +60,10 @@ htmlcov/
 .coverage.*
 coverage.xml
 *.cover
+
+# Dev and notes
+
+
+# Dev and notes
+prompt.md
+roadmap.md

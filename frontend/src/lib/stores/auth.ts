@@ -18,6 +18,10 @@ function createAuthStore() {
 	return {
 		subscribe,
 
+		reset() {
+			set({ user: null, loading: false, initialized: false });
+		},
+
 		async init() {
 			if (!browser) return;
 

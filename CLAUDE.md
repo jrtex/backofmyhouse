@@ -46,6 +46,11 @@ Use environment variables and `.env` files (excluded via `.gitignore`) for confi
 - Keep images minimal and production-ready
 - Use multi-stage builds where appropriate
 
+### Testing
+- Use test-driven development (TDD) for all new features and refactoring
+- Write tests before implementing functionality
+- Ensure all tests pass before considering work complete
+
 ## File Structure Reference
 
 ```

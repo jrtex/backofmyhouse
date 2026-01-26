@@ -6,17 +6,25 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^2.0.0",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^3.0.0",
+    "@testing-library/jest-dom": "^6.2.0",
+    "@testing-library/svelte": "^4.1.0",
     "autoprefixer": "^10.4.16",
+    "jsdom": "^23.2.0",
+    "msw": "^2.0.11",
     "postcss": "^8.4.32",
     "svelte": "^4.2.8",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.3.3",
-    "vite": "^5.0.10"
+    "vite": "^5.0.10",
+    "vitest": "^1.2.0"
   }
 }

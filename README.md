@@ -2,6 +2,8 @@
 
 A full-stack application for managing recipes, built with FastAPI, SvelteKit, and PostgreSQL.
 
+[![CI](https://github.com/jrtex/backofmyhouse/actions/workflows/ci.yml/badge.svg)](https://github.com/jrtex/backofmyhouse/actions/workflows/ci.yml)
+
 ## Features
 
 - User authentication with JWT tokens (HTTP-only cookies)

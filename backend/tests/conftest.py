@@ -1,3 +1,4 @@
+import os
 import pytest
 from typing import Generator
 from uuid import uuid4
@@ -13,23 +14,37 @@ from app.models.user import User, UserRole
 from app.services.auth import AuthService
 
 
-# Create in-memory SQLite database for testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-
-# Enable foreign key support in SQLite
-@event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
+def get_test_database_url():
+    """Get database URL from environment or default to SQLite."""
+    return os.environ.get("DATABASE_URL", "sqlite:///:memory:")
 
 
+def create_test_engine():
+    """Create engine based on database URL."""
+    database_url = get_test_database_url()
+
+    if database_url.startswith("sqlite"):
+        # SQLite configuration (local development)
+        engine = create_engine(
+            database_url,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+
+        # Enable foreign key support in SQLite
+        @event.listens_for(engine, "connect")
+        def set_sqlite_pragma(dbapi_connection, connection_record):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+    else:
+        # PostgreSQL configuration (CI environment)
+        engine = create_engine(database_url)
+
+    return engine
+
+
+engine = create_test_engine()
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

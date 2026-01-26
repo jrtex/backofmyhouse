@@ -1,8 +1,8 @@
 # Recipe Management Application
 
-A full-stack application for managing recipes, built with FastAPI, SvelteKit, and PostgreSQL.
+![Tests](https://github.com/jrtex/backofmyhouse/actions/workflows/test.yml/badge.svg)
 
-[![CI](https://github.com/jrtex/backofmyhouse/actions/workflows/ci.yml/badge.svg)](https://github.com/jrtex/backofmyhouse/actions/workflows/ci.yml)
+A full-stack application for managing recipes, built with FastAPI, SvelteKit, and PostgreSQL.
 
 ## Features
 

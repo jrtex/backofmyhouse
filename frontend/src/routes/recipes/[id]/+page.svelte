@@ -9,6 +9,7 @@
 	let loading = true;
 	let error = '';
 	let deleting = false;
+	let activeTab: 'main' | 'advanced' = 'main';
 
 	$: if (!$isAuthenticated) {
 		goto('/login');
@@ -48,6 +49,27 @@
 		const hours = Math.floor(minutes / 60);
 		const mins = minutes % 60;
 		return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+	}
+
+	function formatComplexity(complexity: string | undefined): string {
+		if (!complexity) return '-';
+		const labels: Record<string, string> = {
+			very_easy: 'Very Easy',
+			easy: 'Easy',
+			medium: 'Medium',
+			hard: 'Hard',
+			very_hard: 'Very Hard'
+		};
+		return labels[complexity] || complexity;
+	}
+
+	function hasAdvancedData(recipe: Recipe): boolean {
+		return !!(
+			recipe.complexity ||
+			(recipe.special_equipment && recipe.special_equipment.length > 0) ||
+			recipe.source_author ||
+			recipe.source_url
+		);
 	}
 </script>
 
@@ -114,6 +136,29 @@
 				</div>
 			</div>
 
+			<!-- Tab Navigation -->
+			<div class="border-b border-gray-200 mb-6">
+				<nav class="-mb-px flex space-x-8">
+					<button
+						on:click={() => (activeTab = 'main')}
+						class="py-2 px-1 border-b-2 font-medium text-sm {activeTab === 'main'
+							? 'border-blue-500 text-blue-600'
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+					>
+						Recipe
+					</button>
+					<button
+						on:click={() => (activeTab = 'advanced')}
+						class="py-2 px-1 border-b-2 font-medium text-sm {activeTab === 'advanced'
+							? 'border-blue-500 text-blue-600'
+							: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+					>
+						Advanced
+					</button>
+				</nav>
+			</div>
+
+			{#if activeTab === 'main'}
 			<div class="grid md:grid-cols-2 gap-8">
 				<div>
 					<h2 class="text-xl font-semibold mb-4">Ingredients</h2>
@@ -168,6 +213,56 @@
 					<h3 class="font-semibold text-yellow-800 mb-2">Notes</h3>
 					<p class="text-yellow-700">{recipe.notes}</p>
 				</div>
+			{/if}
+			{/if}
+
+			{#if activeTab === 'advanced'}
+			<div class="space-y-6">
+				<div class="grid md:grid-cols-2 gap-6">
+					<div class="bg-gray-50 p-4 rounded-lg">
+						<h3 class="text-sm font-medium text-gray-500 mb-1">Complexity</h3>
+						<p class="text-gray-900">{formatComplexity(recipe.complexity)}</p>
+					</div>
+					<div class="bg-gray-50 p-4 rounded-lg">
+						<h3 class="text-sm font-medium text-gray-500 mb-1">Source</h3>
+						{#if recipe.source_url}
+							<p class="text-gray-900">
+								{#if recipe.source_author}
+									<span class="font-medium">{recipe.source_author}</span> -
+								{/if}
+								<a
+									href={recipe.source_url}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="text-blue-600 hover:underline break-all"
+								>
+									{recipe.source_url}
+								</a>
+							</p>
+						{:else if recipe.source_author}
+							<p class="text-gray-900">{recipe.source_author}</p>
+						{:else}
+							<p class="text-gray-400">-</p>
+						{/if}
+					</div>
+				</div>
+
+				<div class="bg-gray-50 p-4 rounded-lg">
+					<h3 class="text-sm font-medium text-gray-500 mb-2">Special Equipment</h3>
+					{#if recipe.special_equipment && recipe.special_equipment.length > 0}
+						<ul class="space-y-1">
+							{#each recipe.special_equipment as equipment}
+								<li class="flex items-center">
+									<span class="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+									{equipment}
+								</li>
+							{/each}
+						</ul>
+					{:else}
+						<p class="text-gray-400">No special equipment required</p>
+					{/if}
+				</div>
+			</div>
 			{/if}
 		</div>
 	{/if}

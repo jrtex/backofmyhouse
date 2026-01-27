@@ -1,10 +1,19 @@
+import enum
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Text, Integer, DateTime, ForeignKey, JSON, Uuid
+from sqlalchemy import Column, String, Text, Integer, DateTime, ForeignKey, JSON, Uuid, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 
 from app.database import Base
 from app.models.tag import recipe_tags
+
+
+class RecipeComplexity(str, enum.Enum):
+    very_easy = "very_easy"
+    easy = "easy"
+    medium = "medium"
+    hard = "hard"
+    very_hard = "very_hard"
 
 
 class Recipe(Base):
@@ -19,6 +28,10 @@ class Recipe(Base):
     cook_time_minutes = Column(Integer, nullable=True)
     servings = Column(Integer, nullable=True)
     notes = Column(Text, nullable=True)
+    complexity = Column(SQLEnum(RecipeComplexity), nullable=True)
+    special_equipment = Column(JSON, nullable=True, default=None)
+    source_author = Column(String(255), nullable=True)
+    source_url = Column(String(2048), nullable=True)
     category_id = Column(Uuid, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     user_id = Column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

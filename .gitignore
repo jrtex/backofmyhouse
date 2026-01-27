@@ -37,6 +37,7 @@ docker-compose.override.yml
 *.swp
 *.swo
 *~
+*nul
 .project
 .settings/
 .claude/settings.local.json

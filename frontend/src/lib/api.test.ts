@@ -302,6 +302,73 @@ describe('API Client', () => {
 		});
 	});
 
+	describe('Settings', () => {
+		describe('getSettings', () => {
+			it('should return settings', async () => {
+				const result = await api.getSettings();
+
+				expect(result.error).toBeUndefined();
+				expect(result.data).toBeDefined();
+				expect(result.data?.ai_provider).toBeNull();
+				expect(result.data?.openai_api_key_configured).toBe(false);
+				expect(result.data?.anthropic_api_key_configured).toBe(false);
+				expect(result.data?.gemini_api_key_configured).toBe(false);
+			});
+
+			it('should return error when not admin', async () => {
+				server.use(
+					http.get('/api/settings', () => {
+						return HttpResponse.json(
+							{ detail: 'Admin access required' },
+							{ status: 403 }
+						);
+					})
+				);
+
+				const result = await api.getSettings();
+
+				expect(result.error).toBe('Admin access required');
+			});
+		});
+
+		describe('updateSettings', () => {
+			it('should update AI provider', async () => {
+				const result = await api.updateSettings({
+					ai_provider: 'openai'
+				});
+
+				expect(result.error).toBeUndefined();
+				expect(result.data?.ai_provider).toBe('openai');
+			});
+
+			it('should update API key', async () => {
+				const result = await api.updateSettings({
+					openai_api_key: 'sk-test-key'
+				});
+
+				expect(result.error).toBeUndefined();
+				expect(result.data?.openai_api_key_configured).toBe(true);
+			});
+
+			it('should return error for invalid API key', async () => {
+				server.use(
+					http.put('/api/settings', () => {
+						return HttpResponse.json(
+							{ detail: 'Invalid OPENAI API key' },
+							{ status: 400 }
+						);
+					})
+				);
+
+				const result = await api.updateSettings({
+					openai_api_key: 'invalid-key'
+				});
+
+				expect(result.error).toBe('Invalid OPENAI API key');
+			});
+		});
+	});
+
 	describe('Error Handling', () => {
 		it('should handle network errors', async () => {
 			server.use(

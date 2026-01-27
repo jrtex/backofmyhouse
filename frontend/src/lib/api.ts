@@ -154,6 +154,15 @@ export const api = {
 	deleteUser: (id: string) =>
 		request<void>(`/users/${id}`, {
 			method: 'DELETE'
+		}),
+
+	// Settings (admin)
+	getSettings: () => request<Settings>('/settings'),
+
+	updateSettings: (data: SettingsUpdate) =>
+		request<Settings>('/settings', {
+			method: 'PUT',
+			body: JSON.stringify(data)
 		})
 };
 
@@ -260,4 +269,20 @@ export interface RecipeUpdate {
 	source_url?: string;
 	category_id?: string;
 	tag_ids?: string[];
+}
+
+export type AIProvider = 'openai' | 'anthropic' | 'gemini';
+
+export interface Settings {
+	ai_provider: AIProvider | null;
+	openai_api_key_configured: boolean;
+	anthropic_api_key_configured: boolean;
+	gemini_api_key_configured: boolean;
+}
+
+export interface SettingsUpdate {
+	ai_provider?: AIProvider;
+	openai_api_key?: string;
+	anthropic_api_key?: string;
+	gemini_api_key?: string;
 }

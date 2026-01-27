@@ -180,5 +180,25 @@ export const handlers = [
 
 	http.delete('/api/users/:id', () => {
 		return new HttpResponse(null, { status: 204 });
+	}),
+
+	// Settings endpoints (admin)
+	http.get('/api/settings', () => {
+		return HttpResponse.json({
+			ai_provider: null,
+			openai_api_key_configured: false,
+			anthropic_api_key_configured: false,
+			gemini_api_key_configured: false
+		});
+	}),
+
+	http.put('/api/settings', async ({ request }) => {
+		const body = await request.json() as Record<string, unknown>;
+		return HttpResponse.json({
+			ai_provider: body.ai_provider || null,
+			openai_api_key_configured: !!body.openai_api_key,
+			anthropic_api_key_configured: !!body.anthropic_api_key,
+			gemini_api_key_configured: !!body.gemini_api_key
+		});
 	})
 ];

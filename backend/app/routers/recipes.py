@@ -101,6 +101,10 @@ async def create_recipe(
         cook_time_minutes=recipe_data.cook_time_minutes,
         servings=recipe_data.servings,
         notes=recipe_data.notes,
+        complexity=recipe_data.complexity,
+        special_equipment=recipe_data.special_equipment,
+        source_author=recipe_data.source_author,
+        source_url=recipe_data.source_url,
         category_id=recipe_data.category_id,
         user_id=current_user.id,
     )
@@ -153,6 +157,14 @@ async def update_recipe(
         recipe.servings = recipe_data.servings
     if recipe_data.notes is not None:
         recipe.notes = recipe_data.notes
+    if recipe_data.complexity is not None:
+        recipe.complexity = recipe_data.complexity
+    if recipe_data.special_equipment is not None:
+        recipe.special_equipment = recipe_data.special_equipment
+    if recipe_data.source_author is not None:
+        recipe.source_author = recipe_data.source_author
+    if recipe_data.source_url is not None:
+        recipe.source_url = recipe_data.source_url
 
     if recipe_data.category_id is not None:
         if recipe_data.category_id:

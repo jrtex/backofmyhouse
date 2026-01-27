@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.models.user import User, UserRole
-from app.models.recipe import Recipe
+from app.models.recipe import Recipe, RecipeComplexity
 from app.models.category import Category
 from app.models.tag import Tag
 from tests.conftest import create_test_user
@@ -138,6 +138,27 @@ class TestGetRecipe:
         response = client.get(f"/api/recipes/{recipe.id}")
         assert response.status_code == 401
 
+    def test_get_recipe_with_metadata_fields(
+        self, client: TestClient, auth_headers: dict, db: Session, test_user: User
+    ):
+        """Get recipe returns all metadata fields."""
+        recipe = create_recipe(
+            db,
+            test_user,
+            complexity=RecipeComplexity.medium,
+            special_equipment=["Blender", "Food processor"],
+            source_author="Test Chef",
+            source_url="https://example.com/test-recipe",
+        )
+
+        response = client.get(f"/api/recipes/{recipe.id}", headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["complexity"] == "medium"
+        assert data["special_equipment"] == ["Blender", "Food processor"]
+        assert data["source_author"] == "Test Chef"
+        assert data["source_url"] == "https://example.com/test-recipe"
+
 
 class TestCreateRecipe:
     def test_create_recipe_minimal(self, client: TestClient, auth_headers: dict):
@@ -209,6 +230,88 @@ class TestCreateRecipe:
         assert response.status_code == 400
         assert "tags not found" in response.json()["detail"]
 
+    def test_create_recipe_with_metadata_fields(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Create recipe with all new metadata fields."""
+        response = client.post(
+            "/api/recipes",
+            json={
+                "title": "Recipe With Metadata",
+                "ingredients": [],
+                "instructions": [],
+                "tag_ids": [],
+                "complexity": "medium",
+                "special_equipment": ["Stand mixer", "Thermometer"],
+                "source_author": "Julia Child",
+                "source_url": "https://example.com/recipe",
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["complexity"] == "medium"
+        assert data["special_equipment"] == ["Stand mixer", "Thermometer"]
+        assert data["source_author"] == "Julia Child"
+        assert data["source_url"] == "https://example.com/recipe"
+
+    def test_create_recipe_complexity_values(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Test all complexity enum values are accepted."""
+        for complexity in ["very_easy", "easy", "medium", "hard", "very_hard"]:
+            response = client.post(
+                "/api/recipes",
+                json={
+                    "title": f"Recipe {complexity}",
+                    "ingredients": [],
+                    "instructions": [],
+                    "tag_ids": [],
+                    "complexity": complexity,
+                },
+                headers=auth_headers,
+            )
+            assert response.status_code == 201
+            assert response.json()["complexity"] == complexity
+
+    def test_create_recipe_invalid_complexity(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Invalid complexity value is rejected."""
+        response = client.post(
+            "/api/recipes",
+            json={
+                "title": "Test",
+                "ingredients": [],
+                "instructions": [],
+                "tag_ids": [],
+                "complexity": "super_easy",
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 422
+
+    def test_create_recipe_metadata_fields_optional(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Metadata fields are optional and default to None."""
+        response = client.post(
+            "/api/recipes",
+            json={
+                "title": "Minimal Recipe",
+                "ingredients": [],
+                "instructions": [],
+                "tag_ids": [],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["complexity"] is None
+        assert data["special_equipment"] is None
+        assert data["source_author"] is None
+        assert data["source_url"] is None
+
 
 class TestUpdateRecipe:
     def test_update_own_recipe(
@@ -261,6 +364,66 @@ class TestUpdateRecipe:
             headers=auth_headers,
         )
         assert response.status_code == 404
+
+    def test_update_recipe_metadata_fields(
+        self, client: TestClient, auth_headers: dict, db: Session, test_user: User
+    ):
+        """Can update recipe metadata fields."""
+        recipe = create_recipe(db, test_user)
+
+        response = client.put(
+            f"/api/recipes/{recipe.id}",
+            json={
+                "complexity": "hard",
+                "special_equipment": ["Dutch oven"],
+                "source_author": "Updated Author",
+                "source_url": "https://updated.com/recipe",
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["complexity"] == "hard"
+        assert data["special_equipment"] == ["Dutch oven"]
+        assert data["source_author"] == "Updated Author"
+        assert data["source_url"] == "https://updated.com/recipe"
+
+    def test_update_recipe_clear_special_equipment(
+        self, client: TestClient, auth_headers: dict, db: Session, test_user: User
+    ):
+        """Can clear special_equipment by setting to empty list."""
+        recipe = create_recipe(
+            db, test_user, special_equipment=["Stand mixer", "Food processor"]
+        )
+
+        response = client.put(
+            f"/api/recipes/{recipe.id}",
+            json={"special_equipment": []},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["special_equipment"] == []
+
+    def test_update_recipe_partial_metadata(
+        self, client: TestClient, auth_headers: dict, db: Session, test_user: User
+    ):
+        """Can update only some metadata fields without affecting others."""
+        recipe = create_recipe(
+            db,
+            test_user,
+            complexity=RecipeComplexity.easy,
+            source_author="Original Author",
+        )
+
+        response = client.put(
+            f"/api/recipes/{recipe.id}",
+            json={"complexity": "very_hard"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["complexity"] == "very_hard"
+        assert data["source_author"] == "Original Author"
 
 
 class TestDeleteRecipe:

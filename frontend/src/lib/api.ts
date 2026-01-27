@@ -192,6 +192,8 @@ export interface Instruction {
 	text: string;
 }
 
+export type RecipeComplexity = 'very_easy' | 'easy' | 'medium' | 'hard' | 'very_hard';
+
 export interface Recipe {
 	id: string;
 	title: string;
@@ -202,6 +204,10 @@ export interface Recipe {
 	cook_time_minutes?: number;
 	servings?: number;
 	notes?: string;
+	complexity?: RecipeComplexity;
+	special_equipment?: string[];
+	source_author?: string;
+	source_url?: string;
 	category?: Category;
 	user: User;
 	tags: Tag[];
@@ -231,6 +237,10 @@ export interface RecipeCreate {
 	cook_time_minutes?: number;
 	servings?: number;
 	notes?: string;
+	complexity?: RecipeComplexity;
+	special_equipment?: string[];
+	source_author?: string;
+	source_url?: string;
 	category_id?: string;
 	tag_ids: string[];
 }
@@ -244,6 +254,10 @@ export interface RecipeUpdate {
 	cook_time_minutes?: number;
 	servings?: number;
 	notes?: string;
+	complexity?: RecipeComplexity;
+	special_equipment?: string[];
+	source_author?: string;
+	source_url?: string;
 	category_id?: string;
 	tag_ids?: string[];
 }

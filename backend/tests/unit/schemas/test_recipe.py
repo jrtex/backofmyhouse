@@ -9,6 +9,7 @@ from app.schemas.recipe import (
     RecipeUpdate,
     RecipeResponse,
     RecipeListResponse,
+    RecipeComplexityEnum,
 )
 
 
@@ -104,6 +105,65 @@ class TestRecipeCreate:
         recipe = RecipeCreate(title="Test", prep_time_minutes=0)
         assert recipe.prep_time_minutes == 0
 
+    def test_complexity_field(self):
+        """Test valid complexity enum values."""
+        for complexity in RecipeComplexityEnum:
+            recipe = RecipeCreate(title="Test", complexity=complexity)
+            assert recipe.complexity == complexity
+
+    def test_complexity_invalid_value(self):
+        """Test invalid complexity value is rejected."""
+        with pytest.raises(ValidationError):
+            RecipeCreate(title="Test", complexity="super_easy")
+
+    def test_special_equipment_field(self):
+        """Test special_equipment list of strings."""
+        equipment = ["Stand mixer", "Food processor", "Instant pot"]
+        recipe = RecipeCreate(title="Test", special_equipment=equipment)
+        assert recipe.special_equipment == equipment
+
+    def test_special_equipment_empty_list(self):
+        """Test empty special_equipment list is valid."""
+        recipe = RecipeCreate(title="Test", special_equipment=[])
+        assert recipe.special_equipment == []
+
+    def test_source_author_field(self):
+        """Test source_author string field."""
+        recipe = RecipeCreate(title="Test", source_author="Julia Child")
+        assert recipe.source_author == "Julia Child"
+
+    def test_source_author_max_length(self):
+        """Test source_author respects max length."""
+        with pytest.raises(ValidationError) as exc_info:
+            RecipeCreate(title="Test", source_author="a" * 256)
+        assert "at most 255 characters" in str(exc_info.value)
+
+    def test_source_url_field(self):
+        """Test source_url string field."""
+        url = "https://example.com/recipes/chocolate-cake"
+        recipe = RecipeCreate(title="Test", source_url=url)
+        assert recipe.source_url == url
+
+    def test_source_url_max_length(self):
+        """Test source_url respects max length."""
+        with pytest.raises(ValidationError) as exc_info:
+            RecipeCreate(title="Test", source_url="https://example.com/" + "a" * 2048)
+        assert "at most 2048 characters" in str(exc_info.value)
+
+    def test_all_new_fields_together(self):
+        """Test all new metadata fields can be set together."""
+        recipe = RecipeCreate(
+            title="Test",
+            complexity=RecipeComplexityEnum.medium,
+            special_equipment=["Blender", "Ice cream maker"],
+            source_author="Test Author",
+            source_url="https://example.com/recipe",
+        )
+        assert recipe.complexity == RecipeComplexityEnum.medium
+        assert recipe.special_equipment == ["Blender", "Ice cream maker"]
+        assert recipe.source_author == "Test Author"
+        assert recipe.source_url == "https://example.com/recipe"
+
 
 class TestRecipeUpdate:
     def test_all_fields_optional(self):
@@ -126,6 +186,47 @@ class TestRecipeUpdate:
     def test_empty_tag_list(self):
         update = RecipeUpdate(tag_ids=[])
         assert update.tag_ids == []
+
+    def test_update_complexity(self):
+        """Test updating complexity field."""
+        update = RecipeUpdate(complexity=RecipeComplexityEnum.hard)
+        assert update.complexity == RecipeComplexityEnum.hard
+
+    def test_update_special_equipment(self):
+        """Test updating special_equipment field."""
+        update = RecipeUpdate(special_equipment=["New equipment"])
+        assert update.special_equipment == ["New equipment"]
+
+    def test_update_source_author(self):
+        """Test updating source_author field."""
+        update = RecipeUpdate(source_author="New Author")
+        assert update.source_author == "New Author"
+
+    def test_update_source_url(self):
+        """Test updating source_url field."""
+        update = RecipeUpdate(source_url="https://newsite.com/recipe")
+        assert update.source_url == "https://newsite.com/recipe"
+
+    def test_new_fields_optional_in_update(self):
+        """Test that all new fields remain None when not specified."""
+        update = RecipeUpdate(title="New Title")
+        assert update.complexity is None
+        assert update.special_equipment is None
+        assert update.source_author is None
+        assert update.source_url is None
+
+
+class TestRecipeComplexityEnum:
+    def test_all_complexity_values_exist(self):
+        """Verify all expected complexity values exist."""
+        expected_values = {"very_easy", "easy", "medium", "hard", "very_hard"}
+        actual_values = {e.value for e in RecipeComplexityEnum}
+        assert actual_values == expected_values
+
+    def test_complexity_string_inheritance(self):
+        """Test that complexity enum values can be used as strings."""
+        assert RecipeComplexityEnum.very_easy == "very_easy"
+        assert RecipeComplexityEnum.hard == "hard"
 
 
 class TestRecipeResponse:

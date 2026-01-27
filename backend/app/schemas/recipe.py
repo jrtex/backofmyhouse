@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Optional, List
 from uuid import UUID
 from pydantic import BaseModel, Field
@@ -6,6 +7,14 @@ from pydantic import BaseModel, Field
 from app.schemas.category import CategoryResponse
 from app.schemas.tag import TagResponse
 from app.schemas.user import UserResponse
+
+
+class RecipeComplexityEnum(str, Enum):
+    very_easy = "very_easy"
+    easy = "easy"
+    medium = "medium"
+    hard = "hard"
+    very_hard = "very_hard"
 
 
 class Ingredient(BaseModel):
@@ -31,6 +40,10 @@ class RecipeCreate(BaseModel):
     notes: Optional[str] = None
     category_id: Optional[UUID] = None
     tag_ids: List[UUID] = Field(default_factory=list)
+    complexity: Optional[RecipeComplexityEnum] = None
+    special_equipment: Optional[List[str]] = None
+    source_author: Optional[str] = Field(None, max_length=255)
+    source_url: Optional[str] = Field(None, max_length=2048)
 
 
 class RecipeUpdate(BaseModel):
@@ -44,6 +57,10 @@ class RecipeUpdate(BaseModel):
     notes: Optional[str] = None
     category_id: Optional[UUID] = None
     tag_ids: Optional[List[UUID]] = None
+    complexity: Optional[RecipeComplexityEnum] = None
+    special_equipment: Optional[List[str]] = None
+    source_author: Optional[str] = Field(None, max_length=255)
+    source_url: Optional[str] = Field(None, max_length=2048)
 
 
 class RecipeResponse(BaseModel):
@@ -56,6 +73,10 @@ class RecipeResponse(BaseModel):
     cook_time_minutes: Optional[int]
     servings: Optional[int]
     notes: Optional[str]
+    complexity: Optional[RecipeComplexityEnum]
+    special_equipment: Optional[List[str]]
+    source_author: Optional[str]
+    source_url: Optional[str]
     category: Optional[CategoryResponse]
     user: UserResponse
     tags: List[TagResponse]

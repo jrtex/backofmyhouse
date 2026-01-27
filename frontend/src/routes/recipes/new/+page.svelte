@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { api, type Category, type Tag, type Ingredient, type Instruction, type Recipe } from '$lib/api';
+	import { api, type Category, type Tag, type Ingredient, type Instruction, type Recipe, type RecipeComplexity } from '$lib/api';
 	import { isAuthenticated } from '$lib/stores/auth';
 
 	let categories: Category[] = [];
@@ -22,6 +22,19 @@
 	let notes = '';
 	let category_id = '';
 	let selectedTags: string[] = [];
+	let complexity: RecipeComplexity | '' = '';
+	let special_equipment: string[] = [''];
+	let source_author = '';
+	let source_url = '';
+
+	const complexityOptions: { value: RecipeComplexity | ''; label: string }[] = [
+		{ value: '', label: 'Select complexity' },
+		{ value: 'very_easy', label: 'Very Easy' },
+		{ value: 'easy', label: 'Easy' },
+		{ value: 'medium', label: 'Medium' },
+		{ value: 'hard', label: 'Hard' },
+		{ value: 'very_hard', label: 'Very Hard' }
+	];
 
 	$: if (!$isAuthenticated) {
 		goto('/login');
@@ -47,6 +60,10 @@
 				notes = recipe.notes || '';
 				category_id = recipe.category?.id || '';
 				selectedTags = recipe.tags.map((t) => t.id);
+				complexity = recipe.complexity || '';
+				special_equipment = recipe.special_equipment?.length ? recipe.special_equipment : [''];
+				source_author = recipe.source_author || '';
+				source_url = recipe.source_url || '';
 			}
 		}
 
@@ -78,12 +95,21 @@
 		}
 	}
 
+	function addEquipment() {
+		special_equipment = [...special_equipment, ''];
+	}
+
+	function removeEquipment(index: number) {
+		special_equipment = special_equipment.filter((_, i) => i !== index);
+	}
+
 	async function handleSubmit() {
 		error = '';
 		saving = true;
 
 		const filteredIngredients = ingredients.filter((ing) => ing.name.trim());
 		const filteredInstructions = instructions.filter((inst) => inst.text.trim());
+		const filteredEquipment = special_equipment.filter((eq) => eq.trim());
 
 		const recipeData = {
 			title,
@@ -94,6 +120,10 @@
 			cook_time_minutes: cook_time_minutes || undefined,
 			servings: servings || undefined,
 			notes: notes || undefined,
+			complexity: complexity || undefined,
+			special_equipment: filteredEquipment.length > 0 ? filteredEquipment : undefined,
+			source_author: source_author || undefined,
+			source_url: source_url || undefined,
 			category_id: category_id || undefined,
 			tag_ids: selectedTags
 		};
@@ -312,6 +342,87 @@
 					placeholder="Additional tips, variations, etc."
 					class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 				></textarea>
+			</div>
+
+			<!-- Advanced Section -->
+			<div class="border-t pt-4 mt-4 mb-6">
+				<h2 class="text-lg font-medium text-gray-900 mb-4">Advanced (Optional)</h2>
+
+				<div class="grid grid-cols-2 gap-4 mb-4">
+					<div>
+						<label for="complexity" class="block text-sm font-medium text-gray-700 mb-1">
+							Complexity
+						</label>
+						<select
+							id="complexity"
+							bind:value={complexity}
+							class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						>
+							{#each complexityOptions as option}
+								<option value={option.value}>{option.label}</option>
+							{/each}
+						</select>
+					</div>
+				</div>
+
+				<div class="grid grid-cols-2 gap-4 mb-4">
+					<div>
+						<label for="source_author" class="block text-sm font-medium text-gray-700 mb-1">
+							Source Author
+						</label>
+						<input
+							type="text"
+							id="source_author"
+							bind:value={source_author}
+							placeholder="e.g., Julia Child"
+							class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						/>
+					</div>
+					<div>
+						<label for="source_url" class="block text-sm font-medium text-gray-700 mb-1">
+							Source URL / Book
+						</label>
+						<input
+							type="text"
+							id="source_url"
+							bind:value={source_url}
+							placeholder="e.g., https://example.com/recipe"
+							class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						/>
+					</div>
+				</div>
+
+				<div class="mb-4">
+					<div class="flex justify-between items-center mb-2">
+						<label class="block text-sm font-medium text-gray-700">Special Equipment</label>
+						<button
+							type="button"
+							on:click={addEquipment}
+							class="text-sm text-blue-600 hover:underline"
+						>
+							+ Add Equipment
+						</button>
+					</div>
+					{#each special_equipment as eq, i}
+						<div class="flex gap-2 mb-2">
+							<input
+								type="text"
+								bind:value={special_equipment[i]}
+								placeholder="e.g., Stand mixer"
+								class="flex-1 px-2 py-1 border rounded text-sm"
+							/>
+							{#if special_equipment.length > 1}
+								<button
+									type="button"
+									on:click={() => removeEquipment(i)}
+									class="text-red-500 hover:text-red-700 px-2"
+								>
+									&times;
+								</button>
+							{/if}
+						</div>
+					{/each}
+				</div>
 			</div>
 
 			<div class="flex gap-4">

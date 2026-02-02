@@ -1,7 +1,13 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 from app.schemas.recipe import Ingredient, Instruction
+
+
+class UrlImportRequest(BaseModel):
+    """Request schema for importing a recipe from a URL."""
+
+    url: HttpUrl
 
 
 class RecipeExtraction(BaseModel):

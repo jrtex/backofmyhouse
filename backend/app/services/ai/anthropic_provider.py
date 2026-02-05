@@ -4,7 +4,7 @@ from typing import Any
 from anthropic import AsyncAnthropic
 
 from app.schemas.import_schemas import RecipeExtraction
-from app.services.ai.base import AIProvider, AIExtractionError
+from app.services.ai.base import AIProvider, AIExtractionError, with_retry
 from app.services.ai.prompts import (
     EXTRACTION_SYSTEM_PROMPT,
     EXTRACTION_JSON_SCHEMA,
@@ -45,7 +45,8 @@ class AnthropicProvider(AIProvider):
         self, image_data: bytes, mime_type: str
     ) -> RecipeExtraction:
         """Extract recipe data from an image using Claude 3.5 Sonnet vision."""
-        try:
+
+        async def _extract() -> RecipeExtraction:
             base64_image = base64.b64encode(image_data).decode("utf-8")
 
             response = await self.client.messages.create(
@@ -74,6 +75,8 @@ class AnthropicProvider(AIProvider):
 
             return self._parse_tool_response(response.content)
 
+        try:
+            return await with_retry(_extract)
         except AIExtractionError:
             raise
         except Exception as e:
@@ -81,7 +84,8 @@ class AnthropicProvider(AIProvider):
 
     async def extract_recipe_from_text(self, text: str) -> RecipeExtraction:
         """Extract recipe data from text using Claude 3.5 Sonnet."""
-        try:
+
+        async def _extract() -> RecipeExtraction:
             user_prompt = TEXT_USER_PROMPT_TEMPLATE.format(text=text)
 
             response = await self.client.messages.create(
@@ -95,6 +99,8 @@ class AnthropicProvider(AIProvider):
 
             return self._parse_tool_response(response.content)
 
+        try:
+            return await with_retry(_extract)
         except AIExtractionError:
             raise
         except Exception as e:

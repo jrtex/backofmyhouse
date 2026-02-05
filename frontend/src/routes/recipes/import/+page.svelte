@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { api, type RecipeExtraction } from '$lib/api';
 	import { isAuthenticated } from '$lib/stores/auth';
@@ -21,8 +22,38 @@
 	// Extraction result
 	let extraction: RecipeExtraction | null = null;
 
+	// Element ref for focus management
+	let resultHeading: HTMLHeadingElement;
+
 	$: if (!$isAuthenticated) {
 		goto('/login');
+	}
+
+	/**
+	 * Get actionable suggestion based on error message content.
+	 */
+	function getErrorSuggestion(errorMessage: string): string | null {
+		const lowerError = errorMessage.toLowerCase();
+
+		if (lowerError.includes('not configured') || lowerError.includes('ai service')) {
+			return 'Contact an admin to configure AI settings.';
+		}
+		if (lowerError.includes('could not extract') || lowerError.includes('extraction')) {
+			return activeTab === 'image'
+				? 'Try a clearer image or a different photo.'
+				: 'The page may not contain a recognizable recipe.';
+		}
+		if (lowerError.includes('could not fetch') || lowerError.includes('url')) {
+			return 'Check the URL is correct and the site is accessible.';
+		}
+		if (lowerError.includes('rate limit') || lowerError.includes('429') || lowerError.includes('too many')) {
+			return 'Please wait a moment and try again.';
+		}
+		if (lowerError.includes('blocked') || lowerError.includes('403')) {
+			return 'This site may block automated access. Try a different recipe source.';
+		}
+
+		return null;
 	}
 
 	function handleTabChange(tab: ImportTab) {
@@ -100,6 +131,9 @@
 			error = result.error;
 		} else if (result.data) {
 			extraction = result.data;
+			// Focus result heading for accessibility after DOM updates
+			await tick();
+			resultHeading?.focus();
 		}
 
 		loading = false;
@@ -128,6 +162,9 @@
 			error = result.error;
 		} else if (result.data) {
 			extraction = result.data;
+			// Focus result heading for accessibility after DOM updates
+			await tick();
+			resultHeading?.focus();
 		}
 
 		loading = false;
@@ -166,10 +203,13 @@
 	</div>
 
 	<!-- Tabs -->
-	<div class="border-b border-gray-200 mb-6">
+	<div class="border-b border-gray-200 mb-6" role="tablist">
 		<nav class="-mb-px flex space-x-8">
 			<button
 				type="button"
+				role="tab"
+				aria-selected={activeTab === 'image'}
+				aria-controls="image-panel"
 				on:click={() => handleTabChange('image')}
 				class="py-4 px-1 border-b-2 font-medium text-sm {activeTab === 'image'
 					? 'border-blue-500 text-blue-600'
@@ -179,6 +219,9 @@
 			</button>
 			<button
 				type="button"
+				role="tab"
+				aria-selected={activeTab === 'url'}
+				aria-controls="url-panel"
 				on:click={() => handleTabChange('url')}
 				class="py-4 px-1 border-b-2 font-medium text-sm {activeTab === 'url'
 					? 'border-blue-500 text-blue-600'
@@ -190,16 +233,23 @@
 	</div>
 
 	{#if error}
-		<div class="mb-6 p-4 bg-red-100 text-red-700 rounded-md">{error}</div>
+		<div role="alert" class="mb-6 p-4 bg-red-100 text-red-700 rounded-md">
+			<p>{error}</p>
+			{#if getErrorSuggestion(error)}
+				<p class="mt-2 text-sm text-red-600">{getErrorSuggestion(error)}</p>
+			{/if}
+		</div>
 	{/if}
 
 	{#if !extraction}
 		<!-- Import Forms -->
-		<div class="bg-white p-6 rounded-lg shadow-sm border">
+		<div class="bg-white p-6 rounded-lg shadow-sm border" aria-busy={loading}>
 			{#if activeTab === 'image'}
 				<!-- Image Import -->
 				<div
-					role="button"
+					id="image-panel"
+					role="tabpanel"
+					aria-label="Image upload area. Drag and drop or click to select an image."
 					tabindex="0"
 					on:dragover={handleDragOver}
 					on:dragleave={handleDragLeave}
@@ -255,7 +305,7 @@
 				{/if}
 			{:else}
 				<!-- URL Import -->
-				<div>
+				<div id="url-panel" role="tabpanel">
 					<label for="url-input" class="block text-sm font-medium text-gray-700 mb-2">
 						Recipe URL
 					</label>
@@ -285,7 +335,13 @@
 		<!-- Extraction Result -->
 		<div class="bg-white p-6 rounded-lg shadow-sm border">
 			<div class="flex items-start justify-between mb-4">
-				<h2 class="text-xl font-semibold text-gray-900">{extraction.title}</h2>
+				<h2
+					bind:this={resultHeading}
+					tabindex="-1"
+					class="text-xl font-semibold text-gray-900 outline-none"
+				>
+					{extraction.title}
+				</h2>
 				<span
 					class="px-2 py-1 rounded-full text-xs font-medium {getConfidenceLabel(extraction.confidence).class}"
 				>

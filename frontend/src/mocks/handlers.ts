@@ -200,5 +200,45 @@ export const handlers = [
 			anthropic_api_key_configured: !!body.anthropic_api_key,
 			gemini_api_key_configured: !!body.gemini_api_key
 		});
+	}),
+
+	// Import endpoints
+	http.post('/api/import/image', async () => {
+		return HttpResponse.json({
+			title: 'Extracted Recipe',
+			description: 'A delicious recipe extracted from image',
+			ingredients: [
+				{ name: 'Flour', quantity: '2', unit: 'cups' },
+				{ name: 'Sugar', quantity: '1', unit: 'cup' }
+			],
+			instructions: [
+				{ step_number: 1, text: 'Mix dry ingredients' },
+				{ step_number: 2, text: 'Add wet ingredients' }
+			],
+			prep_time_minutes: 15,
+			cook_time_minutes: 30,
+			servings: 4,
+			confidence: 0.85,
+			warnings: []
+		});
+	}),
+
+	http.post('/api/import/url', async ({ request }) => {
+		const body = await request.json() as { url: string };
+		return HttpResponse.json({
+			title: 'Recipe from URL',
+			description: 'Extracted from ' + body.url,
+			ingredients: [
+				{ name: 'Butter', quantity: '100', unit: 'g' }
+			],
+			instructions: [
+				{ step_number: 1, text: 'Melt butter' }
+			],
+			prep_time_minutes: 10,
+			cook_time_minutes: 20,
+			servings: 2,
+			confidence: 0.9,
+			warnings: []
+		});
 	})
 ];

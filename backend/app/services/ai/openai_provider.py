@@ -5,7 +5,7 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from app.schemas.import_schemas import RecipeExtraction
-from app.services.ai.base import AIProvider, AIExtractionError
+from app.services.ai.base import AIProvider, AIExtractionError, with_retry
 from app.services.ai.prompts import (
     EXTRACTION_SYSTEM_PROMPT,
     EXTRACTION_JSON_SCHEMA,
@@ -48,7 +48,8 @@ class OpenAIProvider(AIProvider):
         self, image_data: bytes, mime_type: str
     ) -> RecipeExtraction:
         """Extract recipe data from an image using GPT-4o-mini vision."""
-        try:
+
+        async def _extract() -> RecipeExtraction:
             base64_image = base64.b64encode(image_data).decode("utf-8")
             data_url = f"data:{mime_type};base64,{base64_image}"
 
@@ -77,6 +78,8 @@ class OpenAIProvider(AIProvider):
 
             return self._parse_response(content)
 
+        try:
+            return await with_retry(_extract)
         except AIExtractionError:
             raise
         except Exception as e:
@@ -84,7 +87,8 @@ class OpenAIProvider(AIProvider):
 
     async def extract_recipe_from_text(self, text: str) -> RecipeExtraction:
         """Extract recipe data from text using GPT-4o-mini."""
-        try:
+
+        async def _extract() -> RecipeExtraction:
             user_prompt = TEXT_USER_PROMPT_TEMPLATE.format(text=text)
 
             response = await self.client.chat.completions.create(
@@ -103,6 +107,8 @@ class OpenAIProvider(AIProvider):
 
             return self._parse_response(content)
 
+        try:
+            return await with_retry(_extract)
         except AIExtractionError:
             raise
         except Exception as e:

@@ -154,6 +154,41 @@ export const api = {
 	deleteUser: (id: string) =>
 		request<void>(`/users/${id}`, {
 			method: 'DELETE'
+		}),
+
+	// Settings (admin)
+	getSettings: () => request<Settings>('/settings'),
+
+	updateSettings: (data: SettingsUpdate) =>
+		request<Settings>('/settings', {
+			method: 'PUT',
+			body: JSON.stringify(data)
+		}),
+
+	// Import
+	importFromImage: async (file: File): Promise<ApiResponse<RecipeExtraction>> => {
+		const formData = new FormData();
+		formData.append('file', file);
+		try {
+			const response = await fetch(`${API_BASE}/import/image`, {
+				method: 'POST',
+				body: formData,
+				credentials: 'include'
+			});
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({}));
+				return { error: errorData.detail || `Error: ${response.status}` };
+			}
+			return { data: await response.json() };
+		} catch {
+			return { error: 'Network error. Please try again.' };
+		}
+	},
+
+	importFromUrl: (url: string) =>
+		request<RecipeExtraction>('/import/url', {
+			method: 'POST',
+			body: JSON.stringify({ url })
 		})
 };
 
@@ -260,4 +295,34 @@ export interface RecipeUpdate {
 	source_url?: string;
 	category_id?: string;
 	tag_ids?: string[];
+}
+
+export type AIProvider = 'openai' | 'anthropic' | 'gemini';
+
+export interface Settings {
+	ai_provider: AIProvider | null;
+	openai_api_key_configured: boolean;
+	anthropic_api_key_configured: boolean;
+	gemini_api_key_configured: boolean;
+}
+
+export interface SettingsUpdate {
+	ai_provider?: AIProvider;
+	openai_api_key?: string;
+	anthropic_api_key?: string;
+	gemini_api_key?: string;
+}
+
+export interface RecipeExtraction {
+	title: string;
+	description?: string;
+	ingredients: Ingredient[];
+	instructions: Instruction[];
+	prep_time_minutes?: number;
+	cook_time_minutes?: number;
+	servings?: number;
+	notes?: string;
+	special_equipment?: string[];
+	confidence: number;
+	warnings: string[];
 }

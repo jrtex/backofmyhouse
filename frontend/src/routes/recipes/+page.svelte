@@ -67,12 +67,20 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 	<div class="flex justify-between items-center mb-6">
 		<h1 class="text-2xl font-bold text-gray-900">Recipes</h1>
-		<a
-			href="/recipes/new"
-			class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium"
-		>
-			New Recipe
-		</a>
+		<div class="flex gap-2">
+			<a
+				href="/recipes/import"
+				class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium"
+			>
+				Import
+			</a>
+			<a
+				href="/recipes/new"
+				class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium"
+			>
+				New Recipe
+			</a>
+		</div>
 	</div>
 
 	<div class="bg-white p-4 rounded-lg shadow-sm border mb-6">

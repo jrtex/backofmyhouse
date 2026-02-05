@@ -2,8 +2,10 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import { get } from 'svelte/store';
 	import { api, type Category, type Tag, type Ingredient, type Instruction, type Recipe, type RecipeComplexity } from '$lib/api';
 	import { isAuthenticated } from '$lib/stores/auth';
+	import { importedRecipe } from '$lib/stores/importedRecipe';
 
 	let categories: Category[] = [];
 	let tags: Tag[] = [];
@@ -64,6 +66,27 @@
 				special_equipment = recipe.special_equipment?.length ? recipe.special_equipment : [''];
 				source_author = recipe.source_author || '';
 				source_url = recipe.source_url || '';
+			}
+		} else {
+			// Check for imported recipe data
+			const imported = get(importedRecipe);
+			if (imported.extraction) {
+				const ext = imported.extraction;
+				title = ext.title;
+				description = ext.description || '';
+				ingredients = ext.ingredients.length > 0 ? ext.ingredients : [{ name: '', quantity: '', unit: '', notes: '' }];
+				instructions = ext.instructions.length > 0 ? ext.instructions : [{ step_number: 1, text: '' }];
+				prep_time_minutes = ext.prep_time_minutes;
+				cook_time_minutes = ext.cook_time_minutes;
+				servings = ext.servings;
+				notes = ext.notes || '';
+				special_equipment = ext.special_equipment?.length ? ext.special_equipment : [''];
+				// Auto-populate source URL if this was a URL import
+				if (imported.sourceUrl) {
+					source_url = imported.sourceUrl;
+				}
+				// Clear the store to prevent stale data on revisit
+				importedRecipe.clear();
 			}
 		}
 

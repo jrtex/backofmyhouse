@@ -76,7 +76,8 @@ async def with_retry(
         The result of the operation.
 
     Raises:
-        AIExtractionError: If all attempts fail.
+        AIExtractionError: If extraction fails.
+        Exception: Re-raises non-transient exceptions for caller to handle.
     """
     last_error = None
 
@@ -95,7 +96,9 @@ async def with_retry(
                 last_error = e
                 await asyncio.sleep(delay_seconds)
                 continue
-            raise AIExtractionError(f"API error: {e}")
+            # Re-raise non-transient exceptions for caller to handle with
+            # provider-specific error message
+            raise
 
     # Should not reach here, but handle just in case
     raise AIExtractionError(f"All retry attempts failed: {last_error}")

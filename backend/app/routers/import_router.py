@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.import_schemas import RecipeExtraction, UrlImportRequest
+from app.schemas.import_schemas import RecipeExtraction, TextImportRequest, UrlImportRequest
 from app.services.ai.base import AIExtractionError, AINotConfiguredError
 from app.services.ai.factory import get_ai_provider
 from app.services.url_scraper import UrlScraperService, UrlFetchError, UrlBlockedError
@@ -123,6 +123,38 @@ async def import_from_url(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Could not extract recipe from URL: {str(e)}",
+        )
+
+    return result
+
+
+@router.post("/text", response_model=RecipeExtraction)
+async def import_from_text(
+    request: TextImportRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> RecipeExtraction:
+    """Import a recipe from raw text using AI extraction.
+
+    Accepts plain text containing recipe information (ingredients, instructions, etc.)
+    and uses AI to parse it into structured recipe data.
+
+    Returns extracted recipe data for review before saving.
+    """
+    try:
+        provider = get_ai_provider(db)
+    except AINotConfiguredError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI service not configured. Please configure an AI provider in admin settings.",
+        )
+
+    try:
+        result = await provider.extract_recipe_from_text(request.text)
+    except AIExtractionError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Could not extract recipe from text: {str(e)}",
         )
 
     return result

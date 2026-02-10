@@ -189,6 +189,12 @@ export const api = {
 		request<RecipeExtraction>('/import/url', {
 			method: 'POST',
 			body: JSON.stringify({ url })
+		}),
+
+	importFromText: (text: string) =>
+		request<RecipeExtraction>('/import/text', {
+			method: 'POST',
+			body: JSON.stringify({ text })
 		})
 };
 

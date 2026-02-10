@@ -5,7 +5,7 @@
 	import { isAuthenticated } from '$lib/stores/auth';
 	import { importedRecipe } from '$lib/stores/importedRecipe';
 
-	type ImportTab = 'image' | 'url';
+	type ImportTab = 'image' | 'url' | 'text';
 
 	let activeTab: ImportTab = 'image';
 	let loading = false;
@@ -18,6 +18,9 @@
 
 	// URL import state
 	let urlInput = '';
+
+	// Text import state
+	let textInput = '';
 
 	// Extraction result
 	let extraction: RecipeExtraction | null = null;
@@ -39,9 +42,13 @@
 			return 'Contact an admin to configure AI settings.';
 		}
 		if (lowerError.includes('could not extract') || lowerError.includes('extraction')) {
-			return activeTab === 'image'
-				? 'Try a clearer image or a different photo.'
-				: 'The page may not contain a recognizable recipe.';
+			if (activeTab === 'image') {
+				return 'Try a clearer image or a different photo.';
+			} else if (activeTab === 'url') {
+				return 'The page may not contain a recognizable recipe.';
+			} else {
+				return 'Make sure the text contains recipe details like ingredients and instructions.';
+			}
 		}
 		if (lowerError.includes('could not fetch') || lowerError.includes('url')) {
 			return 'Check the URL is correct and the site is accessible.';
@@ -67,6 +74,7 @@
 		selectedFile = null;
 		imagePreview = null;
 		urlInput = '';
+		textInput = '';
 	}
 
 	function handleDragOver(e: DragEvent) {
@@ -170,6 +178,34 @@
 		loading = false;
 	}
 
+	async function handleTextImport() {
+		if (!textInput.trim()) {
+			error = 'Please enter some recipe text.';
+			return;
+		}
+
+		if (textInput.trim().length < 10) {
+			error = 'Please enter more text. The recipe should include ingredients and instructions.';
+			return;
+		}
+
+		loading = true;
+		error = '';
+
+		const result = await api.importFromText(textInput);
+
+		if (result.error) {
+			error = result.error;
+		} else if (result.data) {
+			extraction = result.data;
+			// Focus result heading for accessibility after DOM updates
+			await tick();
+			resultHeading?.focus();
+		}
+
+		loading = false;
+	}
+
 	function getConfidenceLabel(confidence: number): { text: string; class: string } {
 		if (confidence >= 0.8) {
 			return { text: 'High confidence', class: 'bg-green-100 text-green-800' };
@@ -228,6 +264,18 @@
 					: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 			>
 				From URL
+			</button>
+			<button
+				type="button"
+				role="tab"
+				aria-selected={activeTab === 'text'}
+				aria-controls="text-panel"
+				on:click={() => handleTabChange('text')}
+				class="py-4 px-1 border-b-2 font-medium text-sm {activeTab === 'text'
+					? 'border-blue-500 text-blue-600'
+					: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+			>
+				From Text
 			</button>
 		</nav>
 	</div>
@@ -303,7 +351,7 @@
 						{loading ? 'Extracting recipe...' : 'Extract Recipe'}
 					</button>
 				{/if}
-			{:else}
+			{:else if activeTab === 'url'}
 				<!-- URL Import -->
 				<div id="url-panel" role="tabpanel">
 					<label for="url-input" class="block text-sm font-medium text-gray-700 mb-2">
@@ -325,6 +373,46 @@
 					type="button"
 					on:click={handleUrlImport}
 					disabled={loading || !urlInput.trim()}
+					class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 rounded-md font-medium"
+				>
+					{loading ? 'Extracting recipe...' : 'Extract Recipe'}
+				</button>
+			{:else}
+				<!-- Text Import -->
+				<div id="text-panel" role="tabpanel">
+					<label for="text-input" class="block text-sm font-medium text-gray-700 mb-2">
+						Recipe Text
+					</label>
+					<textarea
+						id="text-input"
+						bind:value={textInput}
+						placeholder="Paste your recipe text here...
+
+Example:
+Chocolate Chip Cookies
+
+Ingredients:
+- 2 cups flour
+- 1 cup butter
+- 1 cup sugar
+...
+
+Instructions:
+1. Preheat oven to 350°F
+2. Mix dry ingredients
+..."
+						rows="12"
+						class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+					></textarea>
+					<p class="mt-2 text-xs text-gray-500">
+						Paste any recipe text - from emails, documents, messages, or anywhere else
+					</p>
+				</div>
+
+				<button
+					type="button"
+					on:click={handleTextImport}
+					disabled={loading || !textInput.trim()}
 					class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 rounded-md font-medium"
 				>
 					{loading ? 'Extracting recipe...' : 'Extract Recipe'}

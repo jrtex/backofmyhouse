@@ -10,6 +10,12 @@ class UrlImportRequest(BaseModel):
     url: HttpUrl
 
 
+class TextImportRequest(BaseModel):
+    """Request schema for importing a recipe from raw text."""
+
+    text: str = Field(..., min_length=10, max_length=50000)
+
+
 class RecipeExtraction(BaseModel):
     """Schema for AI-extracted recipe data.
 

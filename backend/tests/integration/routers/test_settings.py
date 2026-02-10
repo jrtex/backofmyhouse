@@ -19,6 +19,9 @@ class TestGetSettings:
         assert "openai_api_key_configured" in data
         assert "anthropic_api_key_configured" in data
         assert "gemini_api_key_configured" in data
+        assert "openai_model" in data
+        assert "anthropic_model" in data
+        assert "gemini_model" in data
 
     def test_get_settings_as_standard_user(
         self, client: TestClient, auth_headers: dict
@@ -194,3 +197,26 @@ class TestUpdateSettings:
         # Should only show configured status
         assert "openai_api_key_configured" in data
         assert "openai_api_key" not in data
+
+    def test_update_model_names(
+        self, client: TestClient, admin_auth_headers: dict, db: Session
+    ):
+        """Admin can update model names."""
+        response = client.put(
+            "/api/settings",
+            json={
+                "openai_model": "gpt-4o",
+                "gemini_model": "gemini-1.5-pro",
+            },
+            headers=admin_auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["openai_model"] == "gpt-4o"
+        assert data["gemini_model"] == "gemini-1.5-pro"
+
+        # Verify persisted
+        response = client.get("/api/settings", headers=admin_auth_headers)
+        data = response.json()
+        assert data["openai_model"] == "gpt-4o"
+        assert data["gemini_model"] == "gemini-1.5-pro"

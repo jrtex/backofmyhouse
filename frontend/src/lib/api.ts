@@ -304,6 +304,9 @@ export interface Settings {
 	openai_api_key_configured: boolean;
 	anthropic_api_key_configured: boolean;
 	gemini_api_key_configured: boolean;
+	openai_model: string;
+	anthropic_model: string;
+	gemini_model: string;
 }
 
 export interface SettingsUpdate {
@@ -311,6 +314,9 @@ export interface SettingsUpdate {
 	openai_api_key?: string;
 	anthropic_api_key?: string;
 	gemini_api_key?: string;
+	openai_model?: string;
+	anthropic_model?: string;
+	gemini_model?: string;
 }
 
 export interface RecipeExtraction {

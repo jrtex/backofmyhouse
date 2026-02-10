@@ -20,6 +20,7 @@ class TestGetAIProvider:
         config = AIConfigResponse(
             provider=AIProviderEnum.openai,
             api_key="sk-test-key",
+            model="gpt-4o-mini",
         )
 
         with patch(
@@ -37,6 +38,7 @@ class TestGetAIProvider:
         config = AIConfigResponse(
             provider=AIProviderEnum.anthropic,
             api_key="sk-ant-test-key",
+            model="claude-sonnet-4-20250514",
         )
 
         with patch(
@@ -54,6 +56,7 @@ class TestGetAIProvider:
         config = AIConfigResponse(
             provider=AIProviderEnum.gemini,
             api_key="AIza-test-key",
+            model="gemini-2.0-flash",
         )
 
         with patch(

@@ -56,4 +56,15 @@ async def update_settings(
                 )
             SettingsService.set_setting(db, setting_key, api_key, encrypt=True)
 
+    # Update model names (no validation needed)
+    model_updates = [
+        (settings_data.openai_model, SettingsService.OPENAI_MODEL_KEY),
+        (settings_data.anthropic_model, SettingsService.ANTHROPIC_MODEL_KEY),
+        (settings_data.gemini_model, SettingsService.GEMINI_MODEL_KEY),
+    ]
+
+    for model_name, setting_key in model_updates:
+        if model_name is not None:
+            SettingsService.set_setting(db, setting_key, model_name)
+
     return SettingsService.get_all_settings(db)

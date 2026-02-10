@@ -2,7 +2,12 @@ import pytest
 from unittest.mock import patch, AsyncMock
 
 from app.services.settings import SettingsService
-from app.schemas.settings import AIProvider
+from app.schemas.settings import (
+    AIProvider,
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_ANTHROPIC_MODEL,
+    DEFAULT_GEMINI_MODEL,
+)
 
 
 class TestGetSetting:
@@ -70,6 +75,9 @@ class TestGetAllSettings:
         assert result.openai_api_key_configured is False
         assert result.anthropic_api_key_configured is False
         assert result.gemini_api_key_configured is False
+        assert result.openai_model == DEFAULT_OPENAI_MODEL
+        assert result.anthropic_model == DEFAULT_ANTHROPIC_MODEL
+        assert result.gemini_model == DEFAULT_GEMINI_MODEL
 
     def test_get_all_settings_with_provider(self, db):
         """Returns configured AI provider."""
@@ -105,7 +113,7 @@ class TestGetAIConfig:
         assert result is None
 
     def test_get_ai_config_complete(self, db):
-        """Returns provider and decrypted key when configured."""
+        """Returns provider, decrypted key, and model when configured."""
         SettingsService.set_setting(db, SettingsService.AI_PROVIDER_KEY, "anthropic")
         SettingsService.set_setting(
             db, SettingsService.ANTHROPIC_API_KEY, "sk-ant-secret", encrypt=True
@@ -115,6 +123,20 @@ class TestGetAIConfig:
         assert result is not None
         assert result.provider == AIProvider.anthropic
         assert result.api_key == "sk-ant-secret"
+        assert result.model == DEFAULT_ANTHROPIC_MODEL
+
+    def test_get_ai_config_with_custom_model(self, db):
+        """Returns custom model when configured."""
+        SettingsService.set_setting(db, SettingsService.AI_PROVIDER_KEY, "gemini")
+        SettingsService.set_setting(
+            db, SettingsService.GEMINI_API_KEY, "AIza-secret", encrypt=True
+        )
+        SettingsService.set_setting(db, SettingsService.GEMINI_MODEL_KEY, "gemini-1.5-pro")
+
+        result = SettingsService.get_ai_config(db)
+        assert result is not None
+        assert result.provider == AIProvider.gemini
+        assert result.model == "gemini-1.5-pro"
 
 
 class TestValidateAPIKey:

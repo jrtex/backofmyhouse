@@ -4,7 +4,14 @@ from sqlalchemy.orm import Session
 import httpx
 
 from app.models.app_setting import AppSetting
-from app.schemas.settings import AIProvider, SettingsResponse, AIConfigResponse
+from app.schemas.settings import (
+    AIProvider,
+    SettingsResponse,
+    AIConfigResponse,
+    DEFAULT_OPENAI_MODEL,
+    DEFAULT_ANTHROPIC_MODEL,
+    DEFAULT_GEMINI_MODEL,
+)
 from app.utils.encryption import encrypt_value, decrypt_value
 
 
@@ -16,6 +23,9 @@ class SettingsService:
     OPENAI_API_KEY = "openai_api_key"
     ANTHROPIC_API_KEY = "anthropic_api_key"
     GEMINI_API_KEY = "gemini_api_key"
+    OPENAI_MODEL_KEY = "openai_model"
+    ANTHROPIC_MODEL_KEY = "anthropic_model"
+    GEMINI_MODEL_KEY = "gemini_model"
 
     API_KEY_SETTINGS = [OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY]
 
@@ -67,11 +77,14 @@ class SettingsService:
             openai_api_key_configured=SettingsService.get_setting(db, SettingsService.OPENAI_API_KEY) is not None,
             anthropic_api_key_configured=SettingsService.get_setting(db, SettingsService.ANTHROPIC_API_KEY) is not None,
             gemini_api_key_configured=SettingsService.get_setting(db, SettingsService.GEMINI_API_KEY) is not None,
+            openai_model=SettingsService.get_setting(db, SettingsService.OPENAI_MODEL_KEY) or DEFAULT_OPENAI_MODEL,
+            anthropic_model=SettingsService.get_setting(db, SettingsService.ANTHROPIC_MODEL_KEY) or DEFAULT_ANTHROPIC_MODEL,
+            gemini_model=SettingsService.get_setting(db, SettingsService.GEMINI_MODEL_KEY) or DEFAULT_GEMINI_MODEL,
         )
 
     @staticmethod
     def get_ai_config(db: Session) -> Optional[AIConfigResponse]:
-        """Get the active AI provider and its API key (for internal use)."""
+        """Get the active AI provider, its API key, and model (for internal use)."""
         provider_val = SettingsService.get_setting(db, SettingsService.AI_PROVIDER_KEY)
         if not provider_val:
             return None
@@ -82,12 +95,20 @@ class SettingsService:
             AIProvider.anthropic: SettingsService.ANTHROPIC_API_KEY,
             AIProvider.gemini: SettingsService.GEMINI_API_KEY,
         }
+        model_map = {
+            AIProvider.openai: (SettingsService.OPENAI_MODEL_KEY, DEFAULT_OPENAI_MODEL),
+            AIProvider.anthropic: (SettingsService.ANTHROPIC_MODEL_KEY, DEFAULT_ANTHROPIC_MODEL),
+            AIProvider.gemini: (SettingsService.GEMINI_MODEL_KEY, DEFAULT_GEMINI_MODEL),
+        }
 
         api_key = SettingsService.get_setting(db, key_map[provider])
         if not api_key:
             return None
 
-        return AIConfigResponse(provider=provider, api_key=api_key)
+        model_key, default_model = model_map[provider]
+        model = SettingsService.get_setting(db, model_key) or default_model
+
+        return AIConfigResponse(provider=provider, api_key=api_key, model=model)
 
     @staticmethod
     async def validate_openai_key(api_key: str) -> bool:

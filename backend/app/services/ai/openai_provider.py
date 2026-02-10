@@ -15,13 +15,14 @@ from app.services.ai.prompts import (
 
 
 class OpenAIProvider(AIProvider):
-    """OpenAI-based recipe extraction using GPT-4o-mini."""
+    """OpenAI-based recipe extraction."""
 
-    MODEL = "gpt-4o-mini"
+    DEFAULT_MODEL = "gpt-4o-mini"
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, model: str | None = None):
         super().__init__(api_key)
         self.client = AsyncOpenAI(api_key=api_key)
+        self.model = model or self.DEFAULT_MODEL
 
     def _build_system_message(self) -> dict[str, Any]:
         """Build system message with extraction instructions and schema."""
@@ -54,7 +55,7 @@ class OpenAIProvider(AIProvider):
             data_url = f"data:{mime_type};base64,{base64_image}"
 
             response = await self.client.chat.completions.create(
-                model=self.MODEL,
+                model=self.model,
                 response_format={"type": "json_object"},
                 messages=[
                     self._build_system_message(),
@@ -92,7 +93,7 @@ class OpenAIProvider(AIProvider):
             user_prompt = TEXT_USER_PROMPT_TEMPLATE.format(text=text)
 
             response = await self.client.chat.completions.create(
-                model=self.MODEL,
+                model=self.model,
                 response_format={"type": "json_object"},
                 messages=[
                     self._build_system_message(),

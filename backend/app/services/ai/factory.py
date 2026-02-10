@@ -42,4 +42,4 @@ def get_ai_provider(db: Session) -> AIProvider:
     if not provider_class:
         raise AINotConfiguredError(f"Unknown AI provider: {config.provider}")
 
-    return provider_class(api_key=config.api_key)
+    return provider_class(api_key=config.api_key, model=config.model)

@@ -14,13 +14,14 @@ from app.services.ai.prompts import (
 
 
 class AnthropicProvider(AIProvider):
-    """Anthropic-based recipe extraction using Claude 3.5 Sonnet."""
+    """Anthropic-based recipe extraction."""
 
-    MODEL = "claude-3-5-sonnet-20241022"
+    DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, model: str | None = None):
         super().__init__(api_key)
         self.client = AsyncAnthropic(api_key=api_key)
+        self.model = model or self.DEFAULT_MODEL
 
     def _get_extraction_tool(self) -> dict[str, Any]:
         """Get the tool definition for structured recipe extraction."""
@@ -50,7 +51,7 @@ class AnthropicProvider(AIProvider):
             base64_image = base64.b64encode(image_data).decode("utf-8")
 
             response = await self.client.messages.create(
-                model=self.MODEL,
+                model=self.model,
                 max_tokens=4096,
                 system=EXTRACTION_SYSTEM_PROMPT,
                 tools=[self._get_extraction_tool()],
@@ -89,7 +90,7 @@ class AnthropicProvider(AIProvider):
             user_prompt = TEXT_USER_PROMPT_TEMPLATE.format(text=text)
 
             response = await self.client.messages.create(
-                model=self.MODEL,
+                model=self.model,
                 max_tokens=4096,
                 system=EXTRACTION_SYSTEM_PROMPT,
                 tools=[self._get_extraction_tool()],

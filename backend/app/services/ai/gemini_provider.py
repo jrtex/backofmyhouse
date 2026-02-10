@@ -13,15 +13,16 @@ from app.services.ai.prompts import (
 
 
 class GeminiProvider(AIProvider):
-    """Google Gemini-based recipe extraction using Gemini 1.5 Flash."""
+    """Google Gemini-based recipe extraction."""
 
-    MODEL = "gemini-1.5-flash"
+    DEFAULT_MODEL = "gemini-2.0-flash"
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, model: str | None = None):
         super().__init__(api_key)
         genai.configure(api_key=api_key)
+        self.model_name = model or self.DEFAULT_MODEL
         self.model = genai.GenerativeModel(
-            model_name=self.MODEL,
+            model_name=self.model_name,
             system_instruction=self._build_system_instruction(),
             generation_config=genai.GenerationConfig(
                 response_mime_type="application/json",

@@ -14,6 +14,9 @@
 	let openaiApiKey = '';
 	let anthropicApiKey = '';
 	let geminiApiKey = '';
+	let openaiModel = '';
+	let anthropicModel = '';
+	let geminiModel = '';
 
 	$: if (!$isAuthenticated || !$isAdmin) {
 		goto('/');
@@ -30,6 +33,9 @@
 		} else if (data) {
 			settings = data;
 			aiProvider = data.ai_provider || '';
+			openaiModel = data.openai_model;
+			anthropicModel = data.anthropic_model;
+			geminiModel = data.gemini_model;
 		}
 		loading = false;
 	}
@@ -44,6 +50,10 @@
 		if (openaiApiKey) updateData.openai_api_key = openaiApiKey;
 		if (anthropicApiKey) updateData.anthropic_api_key = anthropicApiKey;
 		if (geminiApiKey) updateData.gemini_api_key = geminiApiKey;
+		// Only send model if it differs from default (checking if user modified it)
+		if (openaiModel && openaiModel !== settings?.openai_model) updateData.openai_model = openaiModel;
+		if (anthropicModel && anthropicModel !== settings?.anthropic_model) updateData.anthropic_model = anthropicModel;
+		if (geminiModel && geminiModel !== settings?.gemini_model) updateData.gemini_model = geminiModel;
 
 		const { data, error: err } = await api.updateSettings(updateData);
 
@@ -52,6 +62,9 @@
 		} else if (data) {
 			settings = data;
 			aiProvider = data.ai_provider || '';
+			openaiModel = data.openai_model;
+			anthropicModel = data.anthropic_model;
+			geminiModel = data.gemini_model;
 			// Clear API key inputs after successful save
 			openaiApiKey = '';
 			anthropicApiKey = '';
@@ -106,6 +119,17 @@
 			</div>
 
 			<div>
+				<label class="block text-sm font-medium text-gray-700 mb-1">OpenAI Model</label>
+				<input
+					type="text"
+					bind:value={openaiModel}
+					placeholder="gpt-4o-mini"
+					class="w-full px-3 py-2 border rounded-md"
+				/>
+				<p class="mt-1 text-xs text-gray-500">Model name for OpenAI API (e.g., gpt-4o-mini, gpt-4o)</p>
+			</div>
+
+			<div>
 				<label class="block text-sm font-medium text-gray-700 mb-1">
 					Anthropic API Key
 					{#if settings?.anthropic_api_key_configured}
@@ -122,6 +146,17 @@
 			</div>
 
 			<div>
+				<label class="block text-sm font-medium text-gray-700 mb-1">Anthropic Model</label>
+				<input
+					type="text"
+					bind:value={anthropicModel}
+					placeholder="claude-sonnet-4-20250514"
+					class="w-full px-3 py-2 border rounded-md"
+				/>
+				<p class="mt-1 text-xs text-gray-500">Model name for Anthropic API (e.g., claude-sonnet-4-20250514)</p>
+			</div>
+
+			<div>
 				<label class="block text-sm font-medium text-gray-700 mb-1">
 					Google Gemini API Key
 					{#if settings?.gemini_api_key_configured}
@@ -135,6 +170,17 @@
 					class="w-full px-3 py-2 border rounded-md"
 				/>
 				<p class="mt-1 text-xs text-gray-500">Leave blank to keep existing key</p>
+			</div>
+
+			<div>
+				<label class="block text-sm font-medium text-gray-700 mb-1">Gemini Model</label>
+				<input
+					type="text"
+					bind:value={geminiModel}
+					placeholder="gemini-2.0-flash"
+					class="w-full px-3 py-2 border rounded-md"
+				/>
+				<p class="mt-1 text-xs text-gray-500">Model name for Gemini API (e.g., gemini-2.0-flash, gemini-1.5-pro)</p>
 			</div>
 
 			<div class="flex gap-4 pt-4">

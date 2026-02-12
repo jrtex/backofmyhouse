@@ -54,6 +54,7 @@ class ConflictStrategy(str, Enum):
 
 class ImportResult(BaseModel):
     total_in_file: int
+    total_selected: int
     created: int
     skipped: int
     replaced: int

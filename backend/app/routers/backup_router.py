@@ -1,5 +1,7 @@
 import json
 from datetime import datetime
+from typing import List, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
@@ -21,14 +23,18 @@ router = APIRouter()
 
 @router.get("/export")
 async def export_recipes(
+    recipe_ids: Optional[List[UUID]] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ) -> Response:
     """
-    Export all recipes as JSON file download.
+    Export recipes as JSON file download.
     Requires admin access.
+
+    Args:
+        recipe_ids: Optional list of recipe IDs to export. If not provided, exports all recipes.
     """
-    backup = BackupService.export_all_recipes(db)
+    backup = BackupService.export_recipes(db, recipe_ids=recipe_ids)
 
     json_content = backup.model_dump_json(indent=2)
 
@@ -47,12 +53,18 @@ async def export_recipes(
 async def import_recipes(
     file: UploadFile = File(...),
     conflict_strategy: ConflictStrategy = Query(default=ConflictStrategy.skip),
+    selected_titles: Optional[List[str]] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ) -> ImportResult:
     """
     Import recipes from JSON backup file.
     Requires admin access.
+
+    Args:
+        file: JSON backup file to import
+        conflict_strategy: How to handle title conflicts (skip, replace, rename)
+        selected_titles: Optional list of recipe titles to import. If not provided, imports all.
 
     Conflict strategies:
     - skip: Skip recipes that already exist (by title)
@@ -87,6 +99,7 @@ async def import_recipes(
         backup_data=backup_data,
         importing_user_id=current_user.id,
         conflict_strategy=conflict_strategy,
+        selected_titles=selected_titles,
     )
 
     return result

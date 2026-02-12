@@ -101,7 +101,7 @@ class TestExportRecipes:
         create_recipe(db, user, title="Recipe 1")
         create_recipe(db, user, title="Recipe 2")
 
-        result = BackupService.export_all_recipes(db)
+        result = BackupService.export_recipes(db)
 
         assert isinstance(result, BackupExport)
         assert result.metadata.format_version == "1.0"
@@ -126,7 +126,7 @@ class TestExportRecipes:
         recipe.tags.append(tag)
         db.commit()
 
-        result = BackupService.export_all_recipes(db)
+        result = BackupService.export_recipes(db)
 
         assert len(result.recipes) == 1
         exported = result.recipes[0]
@@ -140,10 +140,117 @@ class TestExportRecipes:
 
     def test_export_empty_database(self, db: Session):
         """Export with no recipes returns empty list."""
-        result = BackupService.export_all_recipes(db)
+        result = BackupService.export_recipes(db)
 
         assert result.metadata.recipe_count == 0
         assert result.recipes == []
+
+
+class TestSelectiveExport:
+    def test_export_with_specific_ids(self, db: Session):
+        """Export with specific IDs only exports those recipes."""
+        user = create_user(db)
+        recipe1 = create_recipe(db, user, title="Recipe 1")
+        recipe2 = create_recipe(db, user, title="Recipe 2")
+        create_recipe(db, user, title="Recipe 3")
+
+        result = BackupService.export_recipes(db, recipe_ids=[recipe1.id, recipe2.id])
+
+        assert result.metadata.recipe_count == 2
+        assert len(result.recipes) == 2
+        titles = {r.title for r in result.recipes}
+        assert titles == {"Recipe 1", "Recipe 2"}
+
+    def test_export_with_empty_ids_returns_empty(self, db: Session):
+        """Export with empty ID list returns empty backup."""
+        user = create_user(db)
+        create_recipe(db, user, title="Recipe 1")
+
+        result = BackupService.export_recipes(db, recipe_ids=[])
+
+        assert result.metadata.recipe_count == 0
+        assert result.recipes == []
+
+    def test_export_with_none_returns_all(self, db: Session):
+        """Export with None (default) exports all recipes for backward compatibility."""
+        user = create_user(db)
+        create_recipe(db, user, title="Recipe 1")
+        create_recipe(db, user, title="Recipe 2")
+
+        result = BackupService.export_recipes(db, recipe_ids=None)
+
+        assert result.metadata.recipe_count == 2
+        assert len(result.recipes) == 2
+
+
+class TestSelectiveImport:
+    def test_import_with_selected_titles(self, db: Session):
+        """Import with selected titles only imports those recipes."""
+        user = create_user(db)
+
+        backup = BackupExport(
+            metadata=BackupMetadata(exported_at=datetime.utcnow(), recipe_count=3),
+            recipes=[
+                create_backup_recipe(title="Recipe A"),
+                create_backup_recipe(title="Recipe B"),
+                create_backup_recipe(title="Recipe C"),
+            ],
+        )
+
+        result = BackupService.import_recipes(
+            db, backup, user.id, ConflictStrategy.skip,
+            selected_titles=["Recipe A", "Recipe C"]
+        )
+
+        assert result.total_in_file == 3
+        assert result.total_selected == 2
+        assert result.created == 2
+        assert db.query(Recipe).count() == 2
+        assert db.query(Recipe).filter(Recipe.title == "Recipe B").first() is None
+
+    def test_import_with_empty_selection_imports_nothing(self, db: Session):
+        """Import with empty selection imports nothing."""
+        user = create_user(db)
+
+        backup = BackupExport(
+            metadata=BackupMetadata(exported_at=datetime.utcnow(), recipe_count=2),
+            recipes=[
+                create_backup_recipe(title="Recipe A"),
+                create_backup_recipe(title="Recipe B"),
+            ],
+        )
+
+        result = BackupService.import_recipes(
+            db, backup, user.id, ConflictStrategy.skip,
+            selected_titles=[]
+        )
+
+        assert result.total_in_file == 2
+        assert result.total_selected == 0
+        assert result.created == 0
+        assert db.query(Recipe).count() == 0
+
+    def test_import_with_none_imports_all(self, db: Session):
+        """Import with None (default) imports all for backward compatibility."""
+        user = create_user(db)
+
+        backup = BackupExport(
+            metadata=BackupMetadata(exported_at=datetime.utcnow(), recipe_count=2),
+            recipes=[
+                create_backup_recipe(title="Recipe A"),
+                create_backup_recipe(title="Recipe B"),
+            ],
+        )
+
+        result = BackupService.import_recipes(
+            db, backup, user.id, ConflictStrategy.skip,
+            selected_titles=None
+        )
+
+        assert result.total_in_file == 2
+        assert result.total_selected == 2
+        assert result.created == 2
+        assert db.query(Recipe).count() == 2
 
 
 class TestImportRecipesSkipStrategy:

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -20,9 +20,19 @@ from app.schemas.backup_schemas import (
 
 class BackupService:
     @staticmethod
-    def export_all_recipes(db: Session) -> BackupExport:
-        """Export all recipes with relationships to BackupExport format."""
-        recipes = db.query(Recipe).all()
+    def export_recipes(
+        db: Session, recipe_ids: Optional[List[UUID]] = None
+    ) -> BackupExport:
+        """Export recipes with relationships to BackupExport format.
+
+        Args:
+            db: Database session
+            recipe_ids: Optional list of recipe IDs to export. If None, exports all recipes.
+        """
+        query = db.query(Recipe)
+        if recipe_ids is not None:
+            query = query.filter(Recipe.id.in_(recipe_ids))
+        recipes = query.all()
 
         backup_recipes = []
         for recipe in recipes:
@@ -63,10 +73,27 @@ class BackupService:
         backup_data: BackupExport,
         importing_user_id: UUID,
         conflict_strategy: ConflictStrategy,
+        selected_titles: Optional[List[str]] = None,
     ) -> ImportResult:
-        """Import recipes from backup with conflict resolution."""
+        """Import recipes from backup with conflict resolution.
+
+        Args:
+            db: Database session
+            backup_data: Parsed backup data
+            importing_user_id: ID of user performing the import
+            conflict_strategy: How to handle title conflicts
+            selected_titles: Optional list of recipe titles to import. If None, imports all.
+        """
+        recipes_to_import = backup_data.recipes
+        if selected_titles is not None:
+            selected_set = set(selected_titles)
+            recipes_to_import = [
+                r for r in backup_data.recipes if r.title in selected_set
+            ]
+
         result = ImportResult(
             total_in_file=len(backup_data.recipes),
+            total_selected=len(recipes_to_import),
             created=0,
             skipped=0,
             replaced=0,
@@ -76,7 +103,7 @@ class BackupService:
             error_details=[],
         )
 
-        for backup_recipe in backup_data.recipes:
+        for backup_recipe in recipes_to_import:
             try:
                 existing = (
                     db.query(Recipe)

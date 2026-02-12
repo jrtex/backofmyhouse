@@ -198,8 +198,11 @@ export const api = {
 		}),
 
 	// Backup
-	exportBackup: async (): Promise<void> => {
-		const response = await fetch(`${API_BASE}/backup/export`, {
+	exportBackup: async (recipeIds?: string[]): Promise<void> => {
+		const params = recipeIds?.length
+			? `?${recipeIds.map((id) => `recipe_ids=${id}`).join('&')}`
+			: '';
+		const response = await fetch(`${API_BASE}/backup/export${params}`, {
 			credentials: 'include'
 		});
 		if (!response.ok) {
@@ -217,19 +220,21 @@ export const api = {
 
 	importBackup: async (
 		file: File,
-		conflictStrategy: ConflictStrategy
+		conflictStrategy: ConflictStrategy,
+		selectedTitles?: string[]
 	): Promise<ApiResponse<BackupImportResult>> => {
 		const formData = new FormData();
 		formData.append('file', file);
 		try {
-			const response = await fetch(
-				`${API_BASE}/backup/import?conflict_strategy=${conflictStrategy}`,
-				{
-					method: 'POST',
-					body: formData,
-					credentials: 'include'
-				}
-			);
+			let params = `conflict_strategy=${conflictStrategy}`;
+			if (selectedTitles?.length) {
+				params += `&${selectedTitles.map((t) => `selected_titles=${encodeURIComponent(t)}`).join('&')}`;
+			}
+			const response = await fetch(`${API_BASE}/backup/import?${params}`, {
+				method: 'POST',
+				body: formData,
+				credentials: 'include'
+			});
 			if (!response.ok) {
 				const errorData = await response.json().catch(() => ({}));
 				return { error: errorData.detail || `Error: ${response.status}` };
@@ -386,6 +391,7 @@ export type ConflictStrategy = 'skip' | 'replace' | 'rename';
 
 export interface BackupImportResult {
 	total_in_file: number;
+	total_selected: number;
 	created: number;
 	skipped: number;
 	replaced: number;

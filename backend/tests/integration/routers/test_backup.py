@@ -232,6 +232,136 @@ class TestImportEndpoint:
         assert "JSON file" in response.json()["detail"]
 
 
+class TestSelectiveExportEndpoint:
+    def test_export_with_recipe_ids(
+        self, client: TestClient, admin_auth_headers: dict, db: Session, admin_user: User
+    ):
+        """Export with specific recipe IDs returns only those recipes."""
+        recipe1 = create_recipe(db, admin_user, title="Recipe 1")
+        recipe2 = create_recipe(db, admin_user, title="Recipe 2")
+        create_recipe(db, admin_user, title="Recipe 3")
+
+        response = client.get(
+            f"/api/backup/export?recipe_ids={recipe1.id}&recipe_ids={recipe2.id}",
+            headers=admin_auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["metadata"]["recipe_count"] == 2
+        titles = {r["title"] for r in data["recipes"]}
+        assert titles == {"Recipe 1", "Recipe 2"}
+
+    def test_export_without_recipe_ids_returns_all(
+        self, client: TestClient, admin_auth_headers: dict, db: Session, admin_user: User
+    ):
+        """Export without recipe_ids param returns all recipes."""
+        create_recipe(db, admin_user, title="Recipe 1")
+        create_recipe(db, admin_user, title="Recipe 2")
+
+        response = client.get("/api/backup/export", headers=admin_auth_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["metadata"]["recipe_count"] == 2
+
+
+class TestSelectiveImportEndpoint:
+    def test_import_with_selected_titles(
+        self, client: TestClient, admin_auth_headers: dict, db: Session
+    ):
+        """Import with selected_titles imports only those recipes."""
+        backup_data = create_valid_backup_json([
+            {
+                "title": "Recipe A",
+                "description": None,
+                "ingredients": [],
+                "instructions": [],
+                "prep_time_minutes": None,
+                "cook_time_minutes": None,
+                "servings": None,
+                "notes": None,
+                "complexity": None,
+                "special_equipment": None,
+                "source_author": None,
+                "source_url": None,
+                "category_name": None,
+                "tag_names": [],
+                "original_author": "test",
+                "created_at": datetime.utcnow().isoformat(),
+            },
+            {
+                "title": "Recipe B",
+                "description": None,
+                "ingredients": [],
+                "instructions": [],
+                "prep_time_minutes": None,
+                "cook_time_minutes": None,
+                "servings": None,
+                "notes": None,
+                "complexity": None,
+                "special_equipment": None,
+                "source_author": None,
+                "source_url": None,
+                "category_name": None,
+                "tag_names": [],
+                "original_author": "test",
+                "created_at": datetime.utcnow().isoformat(),
+            },
+            {
+                "title": "Recipe C",
+                "description": None,
+                "ingredients": [],
+                "instructions": [],
+                "prep_time_minutes": None,
+                "cook_time_minutes": None,
+                "servings": None,
+                "notes": None,
+                "complexity": None,
+                "special_equipment": None,
+                "source_author": None,
+                "source_url": None,
+                "category_name": None,
+                "tag_names": [],
+                "original_author": "test",
+                "created_at": datetime.utcnow().isoformat(),
+            },
+        ])
+        file_content = json.dumps(backup_data).encode()
+
+        response = client.post(
+            "/api/backup/import?selected_titles=Recipe%20A&selected_titles=Recipe%20C",
+            files={"file": ("backup.json", io.BytesIO(file_content), "application/json")},
+            headers=admin_auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_in_file"] == 3
+        assert data["total_selected"] == 2
+        assert data["created"] == 2
+        assert db.query(Recipe).filter(Recipe.title == "Recipe B").first() is None
+
+    def test_import_without_selected_titles_imports_all(
+        self, client: TestClient, admin_auth_headers: dict, db: Session
+    ):
+        """Import without selected_titles imports all recipes."""
+        backup_data = create_valid_backup_json()
+        file_content = json.dumps(backup_data).encode()
+
+        response = client.post(
+            "/api/backup/import",
+            files={"file": ("backup.json", io.BytesIO(file_content), "application/json")},
+            headers=admin_auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_in_file"] == 1
+        assert data["total_selected"] == 1
+        assert data["created"] == 1
+
+
 class TestConflictStrategiesEndToEnd:
     def test_skip_strategy(
         self, client: TestClient, admin_auth_headers: dict, db: Session, admin_user: User

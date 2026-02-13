@@ -195,7 +195,55 @@ export const api = {
 		request<RecipeExtraction>('/import/text', {
 			method: 'POST',
 			body: JSON.stringify({ text })
-		})
+		}),
+
+	// Backup
+	exportBackup: async (recipeIds?: string[]): Promise<void> => {
+		const params = recipeIds?.length
+			? `?${recipeIds.map((id) => `recipe_ids=${id}`).join('&')}`
+			: '';
+		const response = await fetch(`${API_BASE}/backup/export${params}`, {
+			credentials: 'include'
+		});
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(errorData.detail || 'Export failed');
+		}
+		const blob = await response.blob();
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `recipes-backup-${new Date().toISOString().split('T')[0]}.json`;
+		a.click();
+		URL.revokeObjectURL(url);
+	},
+
+	importBackup: async (
+		file: File,
+		conflictStrategy: ConflictStrategy,
+		selectedTitles?: string[]
+	): Promise<ApiResponse<BackupImportResult>> => {
+		const formData = new FormData();
+		formData.append('file', file);
+		try {
+			let params = `conflict_strategy=${conflictStrategy}`;
+			if (selectedTitles?.length) {
+				params += `&${selectedTitles.map((t) => `selected_titles=${encodeURIComponent(t)}`).join('&')}`;
+			}
+			const response = await fetch(`${API_BASE}/backup/import?${params}`, {
+				method: 'POST',
+				body: formData,
+				credentials: 'include'
+			});
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({}));
+				return { error: errorData.detail || `Error: ${response.status}` };
+			}
+			return { data: await response.json() };
+		} catch {
+			return { error: 'Network error. Please try again.' };
+		}
+	}
 };
 
 // Types
@@ -337,4 +385,18 @@ export interface RecipeExtraction {
 	special_equipment?: string[];
 	confidence: number;
 	warnings: string[];
+}
+
+export type ConflictStrategy = 'skip' | 'replace' | 'rename';
+
+export interface BackupImportResult {
+	total_in_file: number;
+	total_selected: number;
+	created: number;
+	skipped: number;
+	replaced: number;
+	errors: number;
+	categories_created: number;
+	tags_created: number;
+	error_details: Array<{ title: string; error: string }>;
 }

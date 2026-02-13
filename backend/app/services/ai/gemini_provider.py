@@ -9,6 +9,7 @@ from app.services.ai.prompts import (
     EXTRACTION_JSON_SCHEMA,
     IMAGE_USER_PROMPT,
     TEXT_USER_PROMPT_TEMPLATE,
+    PDF_USER_PROMPT,
 )
 
 
@@ -129,6 +130,31 @@ class GeminiProvider(AIProvider):
             user_prompt = TEXT_USER_PROMPT_TEMPLATE.format(text=text)
 
             response = await self.model.generate_content_async(user_prompt)
+
+            if not response.text:
+                raise AIExtractionError("Empty response from Gemini")
+
+            return self._parse_response(response.text)
+
+        try:
+            return await with_retry(_extract)
+        except AIExtractionError:
+            raise
+        except Exception as e:
+            raise AIExtractionError(f"Gemini API error: {e}")
+
+    async def extract_recipe_from_pdf(self, pdf_data: bytes) -> RecipeExtraction:
+        """Extract recipe data from a PDF using Gemini's native PDF support."""
+
+        async def _extract() -> RecipeExtraction:
+            pdf_part = {
+                "mime_type": "application/pdf",
+                "data": pdf_data,
+            }
+
+            response = await self.model.generate_content_async(
+                [pdf_part, PDF_USER_PROMPT]
+            )
 
             if not response.text:
                 raise AIExtractionError("Empty response from Gemini")

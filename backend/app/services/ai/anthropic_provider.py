@@ -10,6 +10,7 @@ from app.services.ai.prompts import (
     EXTRACTION_JSON_SCHEMA,
     IMAGE_USER_PROMPT,
     TEXT_USER_PROMPT_TEMPLATE,
+    PDF_USER_PROMPT,
 )
 
 
@@ -96,6 +97,45 @@ class AnthropicProvider(AIProvider):
                 tools=[self._get_extraction_tool()],
                 tool_choice={"type": "tool", "name": "extract_recipe"},
                 messages=[{"role": "user", "content": user_prompt}],
+            )
+
+            return self._parse_tool_response(response.content)
+
+        try:
+            return await with_retry(_extract)
+        except AIExtractionError:
+            raise
+        except Exception as e:
+            raise AIExtractionError(f"Anthropic API error: {e}")
+
+    async def extract_recipe_from_pdf(self, pdf_data: bytes) -> RecipeExtraction:
+        """Extract recipe data from a PDF using Claude's native PDF support."""
+
+        async def _extract() -> RecipeExtraction:
+            pdf_base64 = base64.standard_b64encode(pdf_data).decode("utf-8")
+
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=4096,
+                system=EXTRACTION_SYSTEM_PROMPT,
+                tools=[self._get_extraction_tool()],
+                tool_choice={"type": "tool", "name": "extract_recipe"},
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "document",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "application/pdf",
+                                    "data": pdf_base64,
+                                },
+                            },
+                            {"type": "text", "text": PDF_USER_PROMPT},
+                        ],
+                    }
+                ],
             )
 
             return self._parse_tool_response(response.content)

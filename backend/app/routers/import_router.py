@@ -5,15 +5,15 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.import_schemas import RecipeExtraction, TextImportRequest, UrlImportRequest
-from app.services.ai.base import AIExtractionError, AINotConfiguredError
+from app.services.ai.base import AIExtractionError, AINotConfiguredError, PDFNotSupportedError
 from app.services.ai.factory import get_ai_provider
 from app.services.url_scraper import UrlScraperService, UrlFetchError, UrlBlockedError
 from app.services.schema_mapper import map_schema_org_to_extraction
 
 router = APIRouter()
 
-# Allowed image MIME types
-ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic"}
+# Allowed MIME types for image and PDF import
+ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"}
 
 # Maximum file size in bytes (10MB)
 MAX_FILE_SIZE = 10 * 1024 * 1024
@@ -25,16 +25,16 @@ async def import_from_image(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> RecipeExtraction:
-    """Import a recipe from an image using AI extraction.
+    """Import a recipe from an image or PDF using AI extraction.
 
-    Accepts JPEG, PNG, WebP, and HEIC images up to 10MB.
+    Accepts JPEG, PNG, WebP, HEIC images and PDF files up to 10MB.
     Returns extracted recipe data for review before saving.
     """
     # Validate file type
     if file.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid file type. Allowed types: JPEG, PNG, WebP, HEIC",
+            detail="Invalid file type. Allowed types: JPEG, PNG, WebP, HEIC, PDF",
         )
 
     # Read file content
@@ -56,16 +56,24 @@ async def import_from_image(
             detail="AI service not configured. Please configure an AI provider in admin settings.",
         )
 
-    # Extract recipe from image
+    # Extract recipe from file (image or PDF)
     try:
-        result = await provider.extract_recipe_from_image(
-            image_data=content,
-            mime_type=file.content_type,
+        if file.content_type == "application/pdf":
+            result = await provider.extract_recipe_from_pdf(pdf_data=content)
+        else:
+            result = await provider.extract_recipe_from_image(
+                image_data=content,
+                mime_type=file.content_type,
+            )
+    except PDFNotSupportedError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
         )
     except AIExtractionError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Could not extract recipe from image: {str(e)}",
+            detail=f"Could not extract recipe from file: {str(e)}",
         )
 
     return result

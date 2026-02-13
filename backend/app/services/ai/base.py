@@ -31,6 +31,12 @@ class AITransientError(AIProviderError):
     pass
 
 
+class PDFNotSupportedError(AIProviderError):
+    """Raised when the AI provider does not support PDF extraction."""
+
+    pass
+
+
 def is_transient_error(error: Exception) -> bool:
     """Check if an error is transient and should be retried.
 
@@ -149,5 +155,21 @@ class AIProvider(ABC):
 
         Raises:
             AIExtractionError: If extraction fails.
+        """
+        pass
+
+    @abstractmethod
+    async def extract_recipe_from_pdf(self, pdf_data: bytes) -> RecipeExtraction:
+        """Extract recipe data from a PDF document.
+
+        Args:
+            pdf_data: Raw PDF file bytes.
+
+        Returns:
+            RecipeExtraction with extracted recipe data.
+
+        Raises:
+            AIExtractionError: If extraction fails.
+            PDFNotSupportedError: If the provider does not support PDF extraction.
         """
         pass

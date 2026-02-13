@@ -3,6 +3,7 @@ from app.services.ai.base import (
     AIProviderError,
     AINotConfiguredError,
     AIExtractionError,
+    PDFNotSupportedError,
 )
 from app.services.ai.factory import get_ai_provider
 from app.services.ai.openai_provider import OpenAIProvider
@@ -14,6 +15,7 @@ __all__ = [
     "AIProviderError",
     "AINotConfiguredError",
     "AIExtractionError",
+    "PDFNotSupportedError",
     "get_ai_provider",
     "OpenAIProvider",
     "AnthropicProvider",

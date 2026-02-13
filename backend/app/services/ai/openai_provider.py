@@ -5,7 +5,7 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from app.schemas.import_schemas import RecipeExtraction
-from app.services.ai.base import AIProvider, AIExtractionError, with_retry
+from app.services.ai.base import AIProvider, AIExtractionError, PDFNotSupportedError, with_retry
 from app.services.ai.prompts import (
     EXTRACTION_SYSTEM_PROMPT,
     EXTRACTION_JSON_SCHEMA,
@@ -114,3 +114,10 @@ class OpenAIProvider(AIProvider):
             raise
         except Exception as e:
             raise AIExtractionError(f"OpenAI API error: {e}")
+
+    async def extract_recipe_from_pdf(self, pdf_data: bytes) -> RecipeExtraction:
+        """OpenAI does not support native PDF extraction."""
+        raise PDFNotSupportedError(
+            "PDF import is not supported with OpenAI. Please use Anthropic or Gemini, "
+            "or convert your PDF to an image."
+        )

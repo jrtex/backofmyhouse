@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
+    log_level: str = "INFO"
+    log_format: str = "json"
+    ai_usage_retention_days: int = 90
 
     class Config:
         env_file = ".env"

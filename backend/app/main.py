@@ -4,6 +4,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.config import get_settings
+from app.logging_config import setup_logging
 from app.middleware.rate_limit import limiter
 from app.routers import auth, recipes, categories, tags, users
 from app.routers import settings as settings_router
@@ -11,6 +12,7 @@ from app.routers import import_router
 from app.routers import backup_router
 
 app_settings = get_settings()
+setup_logging(log_level=app_settings.log_level, log_format=app_settings.log_format)
 
 app = FastAPI(
     title="Recipe Management API",

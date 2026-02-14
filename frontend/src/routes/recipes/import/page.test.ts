@@ -489,6 +489,103 @@ describe('Import Page', () => {
 		});
 	});
 
+	describe('PDF upload', () => {
+		it('should accept valid PDF files', async () => {
+			render(ImportPage);
+			const file = createMockFile('recipe.pdf', 'application/pdf');
+
+			const input = document.getElementById('file-input') as HTMLInputElement;
+			Object.defineProperty(input, 'files', { value: [file] });
+			await fireEvent.change(input);
+
+			expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+			expect(screen.getByText('Extract Recipe')).toBeInTheDocument();
+		});
+
+		it('should show PDF preview with filename', async () => {
+			render(ImportPage);
+			const file = createMockFile('my-recipe.pdf', 'application/pdf', 2 * 1024 * 1024);
+
+			const input = document.getElementById('file-input') as HTMLInputElement;
+			Object.defineProperty(input, 'files', { value: [file] });
+			await fireEvent.change(input);
+
+			expect(screen.getByText('my-recipe.pdf')).toBeInTheDocument();
+			expect(screen.getByText(/MB/)).toBeInTheDocument();
+		});
+
+		it('should reject PDF files larger than 10MB', async () => {
+			render(ImportPage);
+			const file = createMockFile('large.pdf', 'application/pdf', 11 * 1024 * 1024);
+
+			const input = document.getElementById('file-input') as HTMLInputElement;
+			Object.defineProperty(input, 'files', { value: [file] });
+			await fireEvent.change(input);
+
+			expect(screen.getByRole('alert')).toHaveTextContent(/file too large/i);
+		});
+
+		it('should successfully extract recipe from PDF', async () => {
+			render(ImportPage);
+			const file = createMockFile('recipe.pdf', 'application/pdf');
+
+			const input = document.getElementById('file-input') as HTMLInputElement;
+			Object.defineProperty(input, 'files', { value: [file] });
+			await fireEvent.change(input);
+
+			await fireEvent.click(screen.getByRole('button', { name: /extract recipe/i }));
+
+			await waitFor(() => {
+				expect(screen.getByText('Extracted Recipe')).toBeInTheDocument();
+			});
+		});
+
+		it('should show error when PDF not supported by provider', async () => {
+			server.use(
+				http.post('/api/import/image', () => {
+					return HttpResponse.json(
+						{ detail: 'PDF import is not supported with OpenAI. Please use Anthropic or Gemini.' },
+						{ status: 422 }
+					);
+				})
+			);
+
+			render(ImportPage);
+			const file = createMockFile('recipe.pdf', 'application/pdf');
+
+			const input = document.getElementById('file-input') as HTMLInputElement;
+			Object.defineProperty(input, 'files', { value: [file] });
+			await fireEvent.change(input);
+
+			await fireEvent.click(screen.getByRole('button', { name: /extract recipe/i }));
+
+			await waitFor(() => {
+				expect(screen.getByRole('alert')).toHaveTextContent(/not supported/i);
+			});
+		});
+
+		it('should clear PDF preview when switching tabs', async () => {
+			render(ImportPage);
+			const file = createMockFile('recipe.pdf', 'application/pdf');
+
+			const input = document.getElementById('file-input') as HTMLInputElement;
+			Object.defineProperty(input, 'files', { value: [file] });
+			await fireEvent.change(input);
+
+			expect(screen.getByText('recipe.pdf')).toBeInTheDocument();
+
+			// Switch to URL tab
+			await fireEvent.click(screen.getByRole('tab', { name: /from url/i }));
+
+			// Switch back to image tab
+			await fireEvent.click(screen.getByRole('tab', { name: /from image/i }));
+
+			// PDF preview should be cleared
+			expect(screen.queryByText('recipe.pdf')).not.toBeInTheDocument();
+			expect(screen.getByText(/drag and drop/i)).toBeInTheDocument();
+		});
+	});
+
 	describe('accessibility', () => {
 		it('should have proper tab roles', () => {
 			render(ImportPage);
@@ -496,7 +593,7 @@ describe('Import Page', () => {
 			expect(tablist).toBeInTheDocument();
 
 			const tabs = screen.getAllByRole('tab');
-			expect(tabs).toHaveLength(2);
+			expect(tabs).toHaveLength(3); // Image, URL, Text tabs
 		});
 
 		it('should have aria-selected on active tab', () => {

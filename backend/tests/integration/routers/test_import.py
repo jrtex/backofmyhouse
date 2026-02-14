@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.schemas.import_schemas import RecipeExtraction
-from app.services.ai.base import AINotConfiguredError, AIExtractionError
+from app.services.ai.base import AINotConfiguredError, AIExtractionError, PDFNotSupportedError
 
 
 def create_test_image(content: bytes = b"fake image content", filename: str = "test.jpg"):
@@ -47,14 +47,64 @@ class TestImportImageEndpoint:
         assert response.status_code == 400
         assert "Invalid file type" in response.json()["detail"]
 
-    def test_import_image_invalid_file_type_pdf(
+    @patch("app.routers.import_router.get_ai_provider")
+    def test_import_pdf_success(
+        self, mock_get_provider, client: TestClient, auth_headers: dict
+    ):
+        """Successfully extracts recipe from PDF."""
+        mock_extraction = create_mock_extraction()
+        mock_provider = Mock()
+        mock_provider.extract_recipe_from_pdf = AsyncMock(return_value=mock_extraction)
+        mock_get_provider.return_value = mock_provider
+
+        files = {"file": ("recipe.pdf", io.BytesIO(b"%PDF-1.4 content"), "application/pdf")}
+        response = client.post("/api/import/image", files=files, headers=auth_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["title"] == "Extracted Recipe"
+        mock_provider.extract_recipe_from_pdf.assert_called_once()
+
+    @patch("app.routers.import_router.get_ai_provider")
+    def test_import_pdf_not_supported_error(
+        self, mock_get_provider, client: TestClient, auth_headers: dict
+    ):
+        """Returns 422 when provider doesn't support PDF."""
+        mock_provider = Mock()
+        mock_provider.extract_recipe_from_pdf = AsyncMock(
+            side_effect=PDFNotSupportedError("PDF not supported with OpenAI")
+        )
+        mock_get_provider.return_value = mock_provider
+
+        files = {"file": ("recipe.pdf", io.BytesIO(b"%PDF-1.4 content"), "application/pdf")}
+        response = client.post("/api/import/image", files=files, headers=auth_headers)
+        assert response.status_code == 422
+        assert "not supported" in response.json()["detail"].lower()
+
+    @patch("app.routers.import_router.get_ai_provider")
+    def test_import_pdf_extraction_failure(
+        self, mock_get_provider, client: TestClient, auth_headers: dict
+    ):
+        """Returns 422 when PDF extraction fails."""
+        mock_provider = Mock()
+        mock_provider.extract_recipe_from_pdf = AsyncMock(
+            side_effect=AIExtractionError("Could not extract recipe from PDF")
+        )
+        mock_get_provider.return_value = mock_provider
+
+        files = {"file": ("recipe.pdf", io.BytesIO(b"%PDF-1.4 content"), "application/pdf")}
+        response = client.post("/api/import/image", files=files, headers=auth_headers)
+        assert response.status_code == 422
+        assert "extract" in response.json()["detail"].lower()
+
+    def test_import_pdf_file_too_large(
         self, client: TestClient, auth_headers: dict
     ):
-        """Returns 400 for PDF files."""
-        files = {"file": ("test.pdf", io.BytesIO(b"pdf content"), "application/pdf")}
+        """Returns 400 for PDF files exceeding size limit."""
+        large_content = b"x" * (11 * 1024 * 1024)  # 11MB
+        files = {"file": ("large.pdf", io.BytesIO(large_content), "application/pdf")}
         response = client.post("/api/import/image", files=files, headers=auth_headers)
         assert response.status_code == 400
-        assert "Invalid file type" in response.json()["detail"]
+        assert "too large" in response.json()["detail"].lower()
 
     def test_import_image_file_too_large(
         self, client: TestClient, auth_headers: dict

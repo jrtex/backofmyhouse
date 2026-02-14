@@ -103,9 +103,9 @@
 	}
 
 	function handleFileSelect(file: File) {
-		const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+		const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
 		if (!allowedTypes.includes(file.type)) {
-			error = 'Invalid file type. Please use JPEG, PNG, WebP, or HEIC images.';
+			error = 'Invalid file type. Please use JPEG, PNG, WebP, HEIC images or PDF files.';
 			return;
 		}
 
@@ -119,12 +119,16 @@
 		selectedFile = file;
 		extraction = null;
 
-		// Create preview
-		const reader = new FileReader();
-		reader.onload = (e) => {
-			imagePreview = e.target?.result as string;
-		};
-		reader.readAsDataURL(file);
+		// Create preview for images only (PDFs show icon + filename)
+		if (file.type === 'application/pdf') {
+			imagePreview = null;
+		} else {
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				imagePreview = e.target?.result as string;
+			};
+			reader.readAsDataURL(file);
+		}
 	}
 
 	async function handleImageImport() {
@@ -307,7 +311,21 @@
 					class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
 						{dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}"
 				>
-					{#if imagePreview}
+					{#if selectedFile?.type === 'application/pdf'}
+						<div class="flex flex-col items-center">
+							<svg
+								class="w-16 h-16 text-red-500 mb-2"
+								fill="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 2l5 5h-5V4zm-3 9c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm4 4H6v-1c0-1.3 2.7-2 4-2s4 .7 4 2v1z"/>
+								<path d="M14 9V4l5 5h-5z" fill-opacity="0.3"/>
+							</svg>
+							<p class="text-sm font-medium text-gray-700">{selectedFile.name}</p>
+							<p class="text-xs text-gray-500 mt-1">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+							<p class="text-xs text-gray-400 mt-2">Click or drop to change</p>
+						</div>
+					{:else if imagePreview}
 						<img src={imagePreview} alt="Selected" class="max-h-64 mx-auto mb-4 rounded" />
 						<p class="text-sm text-gray-600">{selectedFile?.name}</p>
 						<p class="text-xs text-gray-400 mt-1">Click or drop to change</p>
@@ -326,17 +344,17 @@
 							/>
 						</svg>
 						<p class="mt-4 text-sm text-gray-600">
-							Drag and drop an image, or click to select
+							Drag and drop an image or PDF, or click to select
 						</p>
 						<p class="mt-1 text-xs text-gray-400">
-							JPEG, PNG, WebP, or HEIC up to 10MB
+							JPEG, PNG, WebP, HEIC, or PDF up to 10MB
 						</p>
 					{/if}
 				</div>
 				<input
 					type="file"
 					id="file-input"
-					accept="image/jpeg,image/png,image/webp,image/heic"
+					accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
 					on:change={handleFileInput}
 					class="hidden"
 				/>

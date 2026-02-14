@@ -140,3 +140,6 @@ TEXT_USER_PROMPT_TEMPLATE = """Extract the recipe information from the following
 
 Text content:
 {text}"""
+
+# User prompt for PDF extraction
+PDF_USER_PROMPT = "Extract the recipe information from this PDF document. Process all pages if there are multiple. Return the data as JSON matching the specified schema."

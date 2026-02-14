@@ -8,6 +8,7 @@ from app.services.ai import (
     AnthropicProvider,
     GeminiProvider,
     AIExtractionError,
+    PDFNotSupportedError,
 )
 
 
@@ -37,6 +38,7 @@ SAMPLE_EXTRACTION_DATA = {
 SAMPLE_IMAGE_DATA = b"fake image data"
 SAMPLE_MIME_TYPE = "image/jpeg"
 SAMPLE_TEXT = "Recipe: Chocolate Chip Cookies..."
+SAMPLE_PDF_DATA = b"%PDF-1.4 fake pdf content"
 
 
 class TestOpenAIProvider:
@@ -147,6 +149,17 @@ class TestOpenAIProvider:
 
         assert "OpenAI API error" in str(exc_info.value)
 
+    @pytest.mark.asyncio
+    async def test_extract_recipe_from_pdf_raises_not_supported(self):
+        """Should raise PDFNotSupportedError for PDF extraction."""
+        provider = OpenAIProvider(api_key="sk-test")
+
+        with pytest.raises(PDFNotSupportedError) as exc_info:
+            await provider.extract_recipe_from_pdf(SAMPLE_PDF_DATA)
+
+        assert "not supported with OpenAI" in str(exc_info.value)
+        assert "Anthropic or Gemini" in str(exc_info.value)
+
 
 class TestAnthropicProvider:
     """Tests for the Anthropic provider implementation."""
@@ -240,6 +253,52 @@ class TestAnthropicProvider:
 
         assert "Anthropic API error" in str(exc_info.value)
 
+    @pytest.mark.asyncio
+    async def test_extract_recipe_from_pdf_success(self):
+        """Should successfully extract recipe from PDF using document type."""
+        provider = AnthropicProvider(api_key="sk-ant-test")
+
+        mock_tool_block = MagicMock()
+        mock_tool_block.type = "tool_use"
+        mock_tool_block.name = "extract_recipe"
+        mock_tool_block.input = SAMPLE_EXTRACTION_DATA
+
+        mock_response = MagicMock()
+        mock_response.content = [mock_tool_block]
+
+        with patch.object(
+            provider.client.messages,
+            "create",
+            new_callable=AsyncMock,
+            return_value=mock_response,
+        ) as mock_create:
+            result = await provider.extract_recipe_from_pdf(SAMPLE_PDF_DATA)
+
+        assert isinstance(result, RecipeExtraction)
+        assert result.title == "Chocolate Chip Cookies"
+
+        # Verify the API was called with document type for PDF
+        call_args = mock_create.call_args
+        messages = call_args.kwargs["messages"]
+        assert messages[0]["content"][0]["type"] == "document"
+        assert messages[0]["content"][0]["source"]["media_type"] == "application/pdf"
+
+    @pytest.mark.asyncio
+    async def test_extract_recipe_from_pdf_raises_on_api_error(self):
+        """Should raise AIExtractionError on PDF API error."""
+        provider = AnthropicProvider(api_key="sk-ant-test")
+
+        with patch.object(
+            provider.client.messages,
+            "create",
+            new_callable=AsyncMock,
+            side_effect=Exception("PDF processing failed"),
+        ):
+            with pytest.raises(AIExtractionError) as exc_info:
+                await provider.extract_recipe_from_pdf(SAMPLE_PDF_DATA)
+
+        assert "Anthropic API error" in str(exc_info.value)
+
 
 class TestGeminiProvider:
     """Tests for the Gemini provider implementation."""
@@ -310,5 +369,62 @@ class TestGeminiProvider:
 
             with pytest.raises(AIExtractionError) as exc_info:
                 await provider.extract_recipe_from_text(SAMPLE_TEXT)
+
+        assert "Gemini API error" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_extract_recipe_from_pdf_success(self):
+        """Should successfully extract recipe from PDF."""
+        with patch("app.services.ai.gemini_provider.genai") as mock_genai:
+            mock_model = MagicMock()
+            mock_response = MagicMock()
+            mock_response.text = json.dumps(SAMPLE_EXTRACTION_DATA)
+            mock_model.generate_content_async = AsyncMock(return_value=mock_response)
+            mock_genai.GenerativeModel.return_value = mock_model
+
+            provider = GeminiProvider(api_key="AIza-test")
+            result = await provider.extract_recipe_from_pdf(SAMPLE_PDF_DATA)
+
+        assert isinstance(result, RecipeExtraction)
+        assert result.title == "Chocolate Chip Cookies"
+        assert len(result.ingredients) == 3
+
+        # Verify the API was called with PDF data
+        call_args = mock_model.generate_content_async.call_args
+        content_parts = call_args[0][0]
+        assert content_parts[0]["mime_type"] == "application/pdf"
+        assert content_parts[0]["data"] == SAMPLE_PDF_DATA
+
+    @pytest.mark.asyncio
+    async def test_extract_recipe_from_pdf_raises_on_empty_response(self):
+        """Should raise AIExtractionError on empty PDF response."""
+        with patch("app.services.ai.gemini_provider.genai") as mock_genai:
+            mock_model = MagicMock()
+            mock_response = MagicMock()
+            mock_response.text = None
+            mock_model.generate_content_async = AsyncMock(return_value=mock_response)
+            mock_genai.GenerativeModel.return_value = mock_model
+
+            provider = GeminiProvider(api_key="AIza-test")
+
+            with pytest.raises(AIExtractionError) as exc_info:
+                await provider.extract_recipe_from_pdf(SAMPLE_PDF_DATA)
+
+        assert "Empty response" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_extract_recipe_from_pdf_raises_on_api_error(self):
+        """Should raise AIExtractionError on PDF API error."""
+        with patch("app.services.ai.gemini_provider.genai") as mock_genai:
+            mock_model = MagicMock()
+            mock_model.generate_content_async = AsyncMock(
+                side_effect=Exception("PDF processing error")
+            )
+            mock_genai.GenerativeModel.return_value = mock_model
+
+            provider = GeminiProvider(api_key="AIza-test")
+
+            with pytest.raises(AIExtractionError) as exc_info:
+                await provider.extract_recipe_from_pdf(SAMPLE_PDF_DATA)
 
         assert "Gemini API error" in str(exc_info.value)

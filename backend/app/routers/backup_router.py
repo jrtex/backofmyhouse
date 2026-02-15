@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
@@ -18,6 +19,8 @@ from app.schemas.backup_schemas import (
 )
 from app.services.backup_service import BackupService
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 
@@ -35,6 +38,7 @@ async def export_recipes(
         recipe_ids: Optional list of recipe IDs to export. If not provided, exports all recipes.
     """
     backup = BackupService.export_recipes(db, recipe_ids=recipe_ids)
+    logger.info("Recipes exported", extra={"recipe_count": len(backup.recipes)})
 
     json_content = backup.model_dump_json(indent=2)
 
@@ -100,6 +104,10 @@ async def import_recipes(
         importing_user_id=current_user.id,
         conflict_strategy=conflict_strategy,
         selected_titles=selected_titles,
+    )
+    logger.info(
+        "Recipes imported",
+        extra={"created_count": result.created, "skipped": result.skipped, "replaced": result.replaced, "errors": result.errors},
     )
 
     return result

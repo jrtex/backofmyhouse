@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.import_schemas import RecipeExtraction
 from app.services.ai.base import AINotConfiguredError, AIExtractionError, PDFNotSupportedError
+from app.services.ai.result import AIExtractionResult
 
 
 def create_test_image(content: bytes = b"fake image content", filename: str = "test.jpg"):
@@ -29,6 +30,21 @@ def create_mock_extraction() -> RecipeExtraction:
     )
 
 
+def create_mock_ai_result(extraction: RecipeExtraction = None) -> AIExtractionResult:
+    """Create a mock AIExtractionResult for testing."""
+    if extraction is None:
+        extraction = create_mock_extraction()
+    return AIExtractionResult(
+        extraction=extraction,
+        provider="openai",
+        model="gpt-4o-mini",
+        input_tokens=100,
+        output_tokens=200,
+        total_tokens=300,
+        duration_ms=1500,
+    )
+
+
 class TestImportImageEndpoint:
     """Tests for POST /api/import/image endpoint."""
 
@@ -47,14 +63,15 @@ class TestImportImageEndpoint:
         assert response.status_code == 400
         assert "Invalid file type" in response.json()["detail"]
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     def test_import_pdf_success(
-        self, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Successfully extracts recipe from PDF."""
-        mock_extraction = create_mock_extraction()
+        mock_ai_result = create_mock_ai_result()
         mock_provider = Mock()
-        mock_provider.extract_recipe_from_pdf = AsyncMock(return_value=mock_extraction)
+        mock_provider.extract_recipe_from_pdf = AsyncMock(return_value=mock_ai_result)
         mock_get_provider.return_value = mock_provider
 
         files = {"file": ("recipe.pdf", io.BytesIO(b"%PDF-1.4 content"), "application/pdf")}
@@ -63,13 +80,17 @@ class TestImportImageEndpoint:
         data = response.json()
         assert data["title"] == "Extracted Recipe"
         mock_provider.extract_recipe_from_pdf.assert_called_once()
+        mock_usage_service.log_usage.assert_called_once()
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     def test_import_pdf_not_supported_error(
-        self, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Returns 422 when provider doesn't support PDF."""
         mock_provider = Mock()
+        mock_provider.provider_name = "openai"
+        mock_provider.model = "gpt-4o-mini"
         mock_provider.extract_recipe_from_pdf = AsyncMock(
             side_effect=PDFNotSupportedError("PDF not supported with OpenAI")
         )
@@ -79,13 +100,20 @@ class TestImportImageEndpoint:
         response = client.post("/api/import/image", files=files, headers=auth_headers)
         assert response.status_code == 422
         assert "not supported" in response.json()["detail"].lower()
+        # Failure should still be logged
+        mock_usage_service.log_usage.assert_called_once()
+        call_kwargs = mock_usage_service.log_usage.call_args[1]
+        assert call_kwargs["success"] is False
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     def test_import_pdf_extraction_failure(
-        self, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Returns 422 when PDF extraction fails."""
         mock_provider = Mock()
+        mock_provider.provider_name = "anthropic"
+        mock_provider.model = "claude-sonnet-4-20250514"
         mock_provider.extract_recipe_from_pdf = AsyncMock(
             side_effect=AIExtractionError("Could not extract recipe from PDF")
         )
@@ -95,6 +123,9 @@ class TestImportImageEndpoint:
         response = client.post("/api/import/image", files=files, headers=auth_headers)
         assert response.status_code == 422
         assert "extract" in response.json()["detail"].lower()
+        mock_usage_service.log_usage.assert_called_once()
+        call_kwargs = mock_usage_service.log_usage.call_args[1]
+        assert call_kwargs["success"] is False
 
     def test_import_pdf_file_too_large(
         self, client: TestClient, auth_headers: dict
@@ -130,12 +161,15 @@ class TestImportImageEndpoint:
         assert response.status_code == 503
         assert "not configured" in response.json()["detail"].lower()
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     def test_import_image_extraction_failure(
-        self, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Returns 422 when AI extraction fails."""
         mock_provider = Mock()
+        mock_provider.provider_name = "openai"
+        mock_provider.model = "gpt-4o-mini"
         mock_provider.extract_recipe_from_image = AsyncMock(
             side_effect=AIExtractionError("Could not extract recipe")
         )
@@ -146,14 +180,15 @@ class TestImportImageEndpoint:
         assert response.status_code == 422
         assert "extract" in response.json()["detail"].lower()
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     def test_import_image_success(
-        self, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Successfully extracts recipe from image."""
-        mock_extraction = create_mock_extraction()
+        mock_ai_result = create_mock_ai_result()
         mock_provider = Mock()
-        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_extraction)
+        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_ai_result)
         mock_get_provider.return_value = mock_provider
 
         files = create_test_image()
@@ -164,71 +199,77 @@ class TestImportImageEndpoint:
         assert data["confidence"] == 0.95
         assert len(data["ingredients"]) == 1
         assert len(data["instructions"]) == 1
+        mock_usage_service.log_usage.assert_called_once()
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     def test_import_image_accepts_jpeg(
-        self, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Accepts JPEG images."""
-        mock_extraction = create_mock_extraction()
+        mock_ai_result = create_mock_ai_result()
         mock_provider = Mock()
-        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_extraction)
+        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_ai_result)
         mock_get_provider.return_value = mock_provider
 
         files = {"file": ("test.jpg", io.BytesIO(b"jpeg content"), "image/jpeg")}
         response = client.post("/api/import/image", files=files, headers=auth_headers)
         assert response.status_code == 200
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     def test_import_image_accepts_png(
-        self, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Accepts PNG images."""
-        mock_extraction = create_mock_extraction()
+        mock_ai_result = create_mock_ai_result()
         mock_provider = Mock()
-        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_extraction)
+        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_ai_result)
         mock_get_provider.return_value = mock_provider
 
         files = {"file": ("test.png", io.BytesIO(b"png content"), "image/png")}
         response = client.post("/api/import/image", files=files, headers=auth_headers)
         assert response.status_code == 200
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     def test_import_image_accepts_webp(
-        self, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Accepts WebP images."""
-        mock_extraction = create_mock_extraction()
+        mock_ai_result = create_mock_ai_result()
         mock_provider = Mock()
-        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_extraction)
+        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_ai_result)
         mock_get_provider.return_value = mock_provider
 
         files = {"file": ("test.webp", io.BytesIO(b"webp content"), "image/webp")}
         response = client.post("/api/import/image", files=files, headers=auth_headers)
         assert response.status_code == 200
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     def test_import_image_accepts_heic(
-        self, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Accepts HEIC images."""
-        mock_extraction = create_mock_extraction()
+        mock_ai_result = create_mock_ai_result()
         mock_provider = Mock()
-        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_extraction)
+        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_ai_result)
         mock_get_provider.return_value = mock_provider
 
         files = {"file": ("test.heic", io.BytesIO(b"heic content"), "image/heic")}
         response = client.post("/api/import/image", files=files, headers=auth_headers)
         assert response.status_code == 200
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     def test_import_image_passes_correct_mime_type(
-        self, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Passes correct MIME type to AI provider."""
-        mock_extraction = create_mock_extraction()
+        mock_ai_result = create_mock_ai_result()
         mock_provider = Mock()
-        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_extraction)
+        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_ai_result)
         mock_get_provider.return_value = mock_provider
 
         files = {"file": ("test.png", io.BytesIO(b"png content"), "image/png")}
@@ -240,9 +281,10 @@ class TestImportImageEndpoint:
         call_args = mock_provider.extract_recipe_from_image.call_args
         assert call_args[1]["mime_type"] == "image/png"
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     def test_import_image_returns_warnings(
-        self, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Returns warnings from extraction."""
         mock_extraction = RecipeExtraction(
@@ -252,8 +294,9 @@ class TestImportImageEndpoint:
             confidence=0.6,
             warnings=["Could not determine servings", "Instructions may be incomplete"],
         )
+        mock_ai_result = create_mock_ai_result(mock_extraction)
         mock_provider = Mock()
-        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_extraction)
+        mock_provider.extract_recipe_from_image = AsyncMock(return_value=mock_ai_result)
         mock_get_provider.return_value = mock_provider
 
         files = create_test_image()
@@ -301,7 +344,7 @@ class TestImportUrlEndpoint:
     def test_import_url_with_schema_org_success(
         self, mock_scraper_class, client: TestClient, auth_headers: dict
     ):
-        """Successfully extracts recipe from URL with schema.org data."""
+        """Successfully extracts recipe from URL with schema.org data (no AI call)."""
         from app.services.url_scraper import UrlContent
 
         mock_scraper = Mock()
@@ -337,10 +380,11 @@ class TestImportUrlEndpoint:
         assert len(data["ingredients"]) == 2
         assert len(data["instructions"]) == 1
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     @patch("app.routers.import_router.UrlScraperService")
     def test_import_url_falls_back_to_ai(
-        self, mock_scraper_class, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_scraper_class, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Falls back to AI extraction when no schema.org data."""
         from app.services.url_scraper import UrlContent
@@ -357,8 +401,9 @@ class TestImportUrlEndpoint:
 
         mock_extraction = create_mock_extraction()
         mock_extraction.title = "AI Extracted Recipe"
+        mock_ai_result = create_mock_ai_result(mock_extraction)
         mock_provider = Mock()
-        mock_provider.extract_recipe_from_text = AsyncMock(return_value=mock_extraction)
+        mock_provider.extract_recipe_from_text = AsyncMock(return_value=mock_ai_result)
         mock_get_provider.return_value = mock_provider
 
         response = client.post(
@@ -371,6 +416,7 @@ class TestImportUrlEndpoint:
         assert data["title"] == "AI Extracted Recipe"
         # Verify AI provider was called with the text
         mock_provider.extract_recipe_from_text.assert_called_once()
+        mock_usage_service.log_usage.assert_called_once()
 
     @patch("app.routers.import_router.get_ai_provider")
     @patch("app.routers.import_router.UrlScraperService")
@@ -442,10 +488,11 @@ class TestImportUrlEndpoint:
         assert response.status_code == 422
         assert "blocked" in response.json()["detail"].lower() or "403" in response.json()["detail"]
 
+    @patch("app.routers.import_router.AIUsageService")
     @patch("app.routers.import_router.get_ai_provider")
     @patch("app.routers.import_router.UrlScraperService")
     def test_import_url_ai_extraction_failure(
-        self, mock_scraper_class, mock_get_provider, client: TestClient, auth_headers: dict
+        self, mock_scraper_class, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
     ):
         """Returns 422 when AI extraction fails."""
         from app.services.url_scraper import UrlContent
@@ -461,6 +508,8 @@ class TestImportUrlEndpoint:
         mock_scraper_class.return_value = mock_scraper
 
         mock_provider = Mock()
+        mock_provider.provider_name = "openai"
+        mock_provider.model = "gpt-4o-mini"
         mock_provider.extract_recipe_from_text = AsyncMock(
             side_effect=AIExtractionError("Could not extract recipe")
         )
@@ -502,3 +551,60 @@ class TestImportUrlEndpoint:
         )
         assert response.status_code == 200
         assert response.json()["title"] == "Simple Recipe"
+
+
+class TestImportTextEndpoint:
+    """Tests for POST /api/import/text endpoint."""
+
+    def test_import_text_requires_auth(self, client: TestClient):
+        response = client.post(
+            "/api/import/text",
+            json={"text": "Recipe text"},
+        )
+        assert response.status_code == 401
+
+    @patch("app.routers.import_router.AIUsageService")
+    @patch("app.routers.import_router.get_ai_provider")
+    def test_import_text_success(
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
+    ):
+        mock_ai_result = create_mock_ai_result()
+        mock_provider = Mock()
+        mock_provider.extract_recipe_from_text = AsyncMock(return_value=mock_ai_result)
+        mock_get_provider.return_value = mock_provider
+
+        response = client.post(
+            "/api/import/text",
+            json={"text": "Some recipe text"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["title"] == "Extracted Recipe"
+        mock_usage_service.log_usage.assert_called_once()
+        call_kwargs = mock_usage_service.log_usage.call_args[1]
+        assert call_kwargs["input_type"] == "text"
+        assert call_kwargs["success"] is True
+
+    @patch("app.routers.import_router.AIUsageService")
+    @patch("app.routers.import_router.get_ai_provider")
+    def test_import_text_failure_logs_usage(
+        self, mock_get_provider, mock_usage_service, client: TestClient, auth_headers: dict
+    ):
+        mock_provider = Mock()
+        mock_provider.provider_name = "openai"
+        mock_provider.model = "gpt-4o-mini"
+        mock_provider.extract_recipe_from_text = AsyncMock(
+            side_effect=AIExtractionError("Extraction failed")
+        )
+        mock_get_provider.return_value = mock_provider
+
+        response = client.post(
+            "/api/import/text",
+            json={"text": "Bad text that is long enough for validation"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 422
+        mock_usage_service.log_usage.assert_called_once()
+        call_kwargs = mock_usage_service.log_usage.call_args[1]
+        assert call_kwargs["success"] is False
+        assert call_kwargs["error_message"] == "Extraction failed"

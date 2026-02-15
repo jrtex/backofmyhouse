@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
@@ -16,6 +17,9 @@ from app.schemas.backup_schemas import (
     ConflictStrategy,
     ImportResult,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class BackupService:

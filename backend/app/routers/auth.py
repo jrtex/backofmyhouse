@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Cookie
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -9,6 +11,8 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.middleware.rate_limit import limiter
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 settings = get_settings()
@@ -40,6 +44,7 @@ async def register(
         password=user_data.password,
     )
 
+    logger.info("User registered", extra={"username": user.username, "role": user.role.value})
     return {"message": "User registered successfully", "role": user.role.value}
 
 
@@ -53,6 +58,7 @@ async def login(
 ):
     user = AuthService.authenticate_user(db, credentials.username, credentials.password)
     if not user:
+        logger.warning("Failed login attempt", extra={"username": credentials.username})
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
@@ -86,6 +92,7 @@ async def login(
         max_age=settings.refresh_token_expire_days * 24 * 60 * 60,
     )
 
+    logger.info("User logged in", extra={"user_id": str(user.id)})
     return {"message": "Login successful"}
 
 
@@ -145,6 +152,7 @@ async def refresh_token(
         max_age=settings.access_token_expire_minutes * 60,
     )
 
+    logger.info("Token refreshed", extra={"user_id": str(user.id)})
     return {"message": "Token refreshed successfully"}
 
 

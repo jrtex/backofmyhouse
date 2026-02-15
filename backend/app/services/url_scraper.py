@@ -1,11 +1,14 @@
 """URL scraper service for fetching and parsing recipe web pages."""
 
 import json
+import logging
 from dataclasses import dataclass
 from typing import Optional
 
 import httpx
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 
 class UrlFetchError(Exception):

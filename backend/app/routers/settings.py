@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -6,6 +8,8 @@ from app.dependencies import require_admin
 from app.models.user import User
 from app.schemas.settings import SettingsResponse, SettingsUpdate
 from app.services.settings import SettingsService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -37,6 +41,7 @@ async def update_settings(
         SettingsService.set_setting(
             db, SettingsService.AI_PROVIDER_KEY, settings_data.ai_provider.value
         )
+        logger.info("AI provider changed", extra={"provider": settings_data.ai_provider.value})
 
     # Validate and update API keys
     api_key_updates = [
@@ -55,6 +60,7 @@ async def update_settings(
                     detail=f"Invalid {provider.upper()} API key",
                 )
             SettingsService.set_setting(db, setting_key, api_key, encrypt=True)
+            logger.info("API key updated", extra={"provider": provider})
 
     # Update model names (no validation needed)
     model_updates = [

@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 from uuid import UUID
 
@@ -11,6 +12,8 @@ from app.models.category import Category
 from app.models.tag import Tag
 from app.models.user import User, UserRole
 from app.schemas.recipe import RecipeCreate, RecipeUpdate, RecipeResponse, RecipeListResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 

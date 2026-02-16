@@ -1,11 +1,13 @@
 import base64
 import json
+import time
 from typing import Any
 
 from openai import AsyncOpenAI
 
 from app.schemas.import_schemas import RecipeExtraction
 from app.services.ai.base import AIProvider, AIExtractionError, PDFNotSupportedError, with_retry
+from app.services.ai.result import AIExtractionResult
 from app.services.ai.prompts import (
     EXTRACTION_SYSTEM_PROMPT,
     EXTRACTION_JSON_SCHEMA,
@@ -18,6 +20,7 @@ class OpenAIProvider(AIProvider):
     """OpenAI-based recipe extraction."""
 
     DEFAULT_MODEL = "gpt-4o-mini"
+    provider_name = "openai"
 
     def __init__(self, api_key: str, model: str | None = None):
         super().__init__(api_key)
@@ -47,13 +50,14 @@ class OpenAIProvider(AIProvider):
 
     async def extract_recipe_from_image(
         self, image_data: bytes, mime_type: str
-    ) -> RecipeExtraction:
+    ) -> AIExtractionResult:
         """Extract recipe data from an image using GPT-4o-mini vision."""
 
-        async def _extract() -> RecipeExtraction:
+        async def _extract() -> AIExtractionResult:
             base64_image = base64.b64encode(image_data).decode("utf-8")
             data_url = f"data:{mime_type};base64,{base64_image}"
 
+            start = time.monotonic()
             response = await self.client.chat.completions.create(
                 model=self.model,
                 response_format={"type": "json_object"},
@@ -72,12 +76,23 @@ class OpenAIProvider(AIProvider):
                 ],
                 max_tokens=4096,
             )
+            duration_ms = int((time.monotonic() - start) * 1000)
 
             content = response.choices[0].message.content
             if not content:
                 raise AIExtractionError("Empty response from OpenAI")
 
-            return self._parse_response(content)
+            extraction = self._parse_response(content)
+            usage = response.usage
+            return AIExtractionResult(
+                extraction=extraction,
+                provider="openai",
+                model=self.model,
+                input_tokens=usage.prompt_tokens if usage else None,
+                output_tokens=usage.completion_tokens if usage else None,
+                total_tokens=usage.total_tokens if usage else None,
+                duration_ms=duration_ms,
+            )
 
         try:
             return await with_retry(_extract)
@@ -86,12 +101,13 @@ class OpenAIProvider(AIProvider):
         except Exception as e:
             raise AIExtractionError(f"OpenAI API error: {e}")
 
-    async def extract_recipe_from_text(self, text: str) -> RecipeExtraction:
+    async def extract_recipe_from_text(self, text: str) -> AIExtractionResult:
         """Extract recipe data from text using GPT-4o-mini."""
 
-        async def _extract() -> RecipeExtraction:
+        async def _extract() -> AIExtractionResult:
             user_prompt = TEXT_USER_PROMPT_TEMPLATE.format(text=text)
 
+            start = time.monotonic()
             response = await self.client.chat.completions.create(
                 model=self.model,
                 response_format={"type": "json_object"},
@@ -101,12 +117,23 @@ class OpenAIProvider(AIProvider):
                 ],
                 max_tokens=4096,
             )
+            duration_ms = int((time.monotonic() - start) * 1000)
 
             content = response.choices[0].message.content
             if not content:
                 raise AIExtractionError("Empty response from OpenAI")
 
-            return self._parse_response(content)
+            extraction = self._parse_response(content)
+            usage = response.usage
+            return AIExtractionResult(
+                extraction=extraction,
+                provider="openai",
+                model=self.model,
+                input_tokens=usage.prompt_tokens if usage else None,
+                output_tokens=usage.completion_tokens if usage else None,
+                total_tokens=usage.total_tokens if usage else None,
+                duration_ms=duration_ms,
+            )
 
         try:
             return await with_retry(_extract)
@@ -115,7 +142,7 @@ class OpenAIProvider(AIProvider):
         except Exception as e:
             raise AIExtractionError(f"OpenAI API error: {e}")
 
-    async def extract_recipe_from_pdf(self, pdf_data: bytes) -> RecipeExtraction:
+    async def extract_recipe_from_pdf(self, pdf_data: bytes) -> AIExtractionResult:
         """OpenAI does not support native PDF extraction."""
         raise PDFNotSupportedError(
             "PDF import is not supported with OpenAI. Please use Anthropic or Gemini, "

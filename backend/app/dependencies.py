@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 from uuid import UUID
 
@@ -7,6 +8,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User, UserRole
 from app.services.auth import AuthService
+
+logger = logging.getLogger(__name__)
 
 
 def get_current_user(
@@ -69,6 +72,7 @@ def get_current_user_optional(
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != UserRole.admin:
+        logger.warning("Admin access denied", extra={"user_id": str(current_user.id)})
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",

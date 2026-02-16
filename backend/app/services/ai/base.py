@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, TypeVar
 
 from app.schemas.import_schemas import RecipeExtraction
+from app.services.ai.result import AIExtractionResult
 
 T = TypeVar("T")
 
@@ -117,6 +118,8 @@ class AIProvider(ABC):
     from both images and text content.
     """
 
+    provider_name: str = "unknown"
+
     def __init__(self, api_key: str):
         """Initialize the provider with an API key.
 
@@ -128,7 +131,7 @@ class AIProvider(ABC):
     @abstractmethod
     async def extract_recipe_from_image(
         self, image_data: bytes, mime_type: str
-    ) -> RecipeExtraction:
+    ) -> AIExtractionResult:
         """Extract recipe data from an image.
 
         Args:
@@ -136,7 +139,7 @@ class AIProvider(ABC):
             mime_type: MIME type of the image (e.g., 'image/jpeg', 'image/png').
 
         Returns:
-            RecipeExtraction with extracted recipe data.
+            AIExtractionResult with extracted recipe data and usage metadata.
 
         Raises:
             AIExtractionError: If extraction fails.
@@ -144,14 +147,14 @@ class AIProvider(ABC):
         pass
 
     @abstractmethod
-    async def extract_recipe_from_text(self, text: str) -> RecipeExtraction:
+    async def extract_recipe_from_text(self, text: str) -> AIExtractionResult:
         """Extract recipe data from text content.
 
         Args:
             text: Raw text containing recipe information.
 
         Returns:
-            RecipeExtraction with extracted recipe data.
+            AIExtractionResult with extracted recipe data and usage metadata.
 
         Raises:
             AIExtractionError: If extraction fails.
@@ -159,14 +162,14 @@ class AIProvider(ABC):
         pass
 
     @abstractmethod
-    async def extract_recipe_from_pdf(self, pdf_data: bytes) -> RecipeExtraction:
+    async def extract_recipe_from_pdf(self, pdf_data: bytes) -> AIExtractionResult:
         """Extract recipe data from a PDF document.
 
         Args:
             pdf_data: Raw PDF file bytes.
 
         Returns:
-            RecipeExtraction with extracted recipe data.
+            AIExtractionResult with extracted recipe data and usage metadata.
 
         Raises:
             AIExtractionError: If extraction fails.

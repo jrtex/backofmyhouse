@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID
@@ -8,6 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.models.user import User, UserRole
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 

@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.schemas.settings import AIProvider as AIProviderEnum
@@ -6,6 +8,9 @@ from app.services.ai.openai_provider import OpenAIProvider
 from app.services.ai.anthropic_provider import AnthropicProvider
 from app.services.ai.gemini_provider import GeminiProvider
 from app.services.settings import SettingsService
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_ai_provider(db: Session) -> AIProvider:

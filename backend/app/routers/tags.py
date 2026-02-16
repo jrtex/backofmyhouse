@@ -1,3 +1,4 @@
+import logging
 from typing import List
 from uuid import UUID
 
@@ -9,6 +10,8 @@ from app.dependencies import get_current_user, require_admin
 from app.models.tag import Tag
 from app.models.user import User
 from app.schemas.tag import TagCreate, TagResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 

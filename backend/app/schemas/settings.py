@@ -10,9 +10,9 @@ class AIProvider(str, enum.Enum):
 
 
 # Default model names for each provider
-DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
-DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
-DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
+DEFAULT_OPENAI_MODEL = "gpt-4o"
+DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-4-6"
+DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 
 
 class SettingsResponse(BaseModel):
@@ -35,6 +35,18 @@ class SettingsUpdate(BaseModel):
     openai_model: Optional[str] = Field(None, min_length=1)
     anthropic_model: Optional[str] = Field(None, min_length=1)
     gemini_model: Optional[str] = Field(None, min_length=1)
+
+
+class TestConnectionRequest(BaseModel):
+    """Request to test an AI provider connection."""
+    provider: AIProvider
+    api_key: Optional[str] = Field(None, min_length=1)
+
+
+class TestConnectionResponse(BaseModel):
+    """Response from testing an AI provider connection."""
+    success: bool
+    message: str
 
 
 class AIConfigResponse(BaseModel):

@@ -38,7 +38,7 @@ class TestGetAIProvider:
         config = AIConfigResponse(
             provider=AIProviderEnum.anthropic,
             api_key="sk-ant-test-key",
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
         )
 
         with patch(
@@ -56,7 +56,7 @@ class TestGetAIProvider:
         config = AIConfigResponse(
             provider=AIProviderEnum.gemini,
             api_key="AIza-test-key",
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
         )
 
         with patch(

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import require_admin
 from app.models.user import User
-from app.schemas.settings import SettingsResponse, SettingsUpdate
+from app.schemas.settings import SettingsResponse, SettingsUpdate, TestConnectionRequest, TestConnectionResponse
 from app.services.settings import SettingsService
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,44 @@ async def get_settings(
     API keys are masked - only shows whether they are configured.
     """
     return SettingsService.get_all_settings(db)
+
+
+@router.post("/test-connection", response_model=TestConnectionResponse)
+async def test_connection(
+    request: TestConnectionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+) -> TestConnectionResponse:
+    """Test an AI provider connection (admin only).
+
+    If api_key is provided, tests that key. Otherwise tests the stored key.
+    """
+    api_key = request.api_key
+    provider = request.provider.value
+
+    if not api_key:
+        key_map = {
+            "openai": SettingsService.OPENAI_API_KEY,
+            "anthropic": SettingsService.ANTHROPIC_API_KEY,
+            "gemini": SettingsService.GEMINI_API_KEY,
+        }
+        api_key = SettingsService.get_setting(db, key_map[provider])
+        if not api_key:
+            return TestConnectionResponse(
+                success=False,
+                message=f"No API key configured for {provider}",
+            )
+
+    is_valid = await SettingsService.validate_api_key(provider, api_key)
+    if is_valid:
+        return TestConnectionResponse(
+            success=True,
+            message="Connection successful",
+        )
+    return TestConnectionResponse(
+        success=False,
+        message=f"Connection failed. Please check your {provider} API key.",
+    )
 
 
 @router.put("", response_model=SettingsResponse)

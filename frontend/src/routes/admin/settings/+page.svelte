@@ -187,7 +187,7 @@
 				<button
 					type="submit"
 					disabled={saving}
-					class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-md font-medium"
+					class="bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white px-4 py-2 rounded-md font-medium"
 				>
 					{saving ? 'Saving...' : 'Save Settings'}
 				</button>
@@ -196,6 +196,6 @@
 	{/if}
 
 	<div class="mt-6">
-		<a href="/admin" class="text-blue-600 hover:underline">&larr; Back to Admin</a>
+		<a href="/admin" class="text-primary-600 hover:underline">&larr; Back to Admin</a>
 	</div>
 </div>

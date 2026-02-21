@@ -43,7 +43,7 @@
 				id="username"
 				bind:value={username}
 				required
-				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 			/>
 		</div>
 
@@ -54,21 +54,21 @@
 				id="password"
 				bind:value={password}
 				required
-				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 			/>
 		</div>
 
 		<button
 			type="submit"
 			disabled={loading}
-			class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 rounded-md font-medium"
+			class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white py-2 rounded-md font-medium"
 		>
 			{loading ? 'Logging in...' : 'Login'}
 		</button>
 
 		<p class="mt-4 text-center text-sm text-gray-600">
 			Don't have an account?
-			<a href="/register" class="text-blue-600 hover:underline">Register</a>
+			<a href="/register" class="text-primary-600 hover:underline">Register</a>
 		</p>
 	</form>
 </div>

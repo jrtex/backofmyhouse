@@ -99,7 +99,7 @@
 		<h1 class="text-2xl font-bold text-gray-900">Users</h1>
 		<button
 			on:click={openCreateForm}
-			class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium"
+			class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md font-medium"
 		>
 			Add User
 		</button>
@@ -150,7 +150,7 @@
 				<div class="col-span-2 flex gap-4">
 					<button
 						type="submit"
-						class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+						class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md"
 					>
 						{editingUser ? 'Update' : 'Create'}
 					</button>
@@ -184,7 +184,7 @@
 							<td class="px-6 py-4 whitespace-nowrap">
 								<span
 									class="px-2 py-1 text-xs rounded-full {user.role === 'admin'
-										? 'bg-blue-100 text-blue-800'
+										? 'bg-primary-100 text-primary-800'
 										: 'bg-gray-100 text-gray-800'}"
 								>
 									{user.role}
@@ -194,7 +194,7 @@
 								{new Date(user.created_at).toLocaleDateString()}
 							</td>
 							<td class="px-6 py-4 whitespace-nowrap text-right text-sm">
-								<button on:click={() => openEditForm(user)} class="text-blue-600 hover:underline mr-4">
+								<button on:click={() => openEditForm(user)} class="text-primary-600 hover:underline mr-4">
 									Edit
 								</button>
 								{#if user.id !== $currentUser?.id}
@@ -211,6 +211,6 @@
 	{/if}
 
 	<div class="mt-6">
-		<a href="/admin" class="text-blue-600 hover:underline">&larr; Back to Admin</a>
+		<a href="/admin" class="text-primary-600 hover:underline">&larr; Back to Admin</a>
 	</div>
 </div>

@@ -48,10 +48,22 @@ describe('RecipeCard', () => {
 			const link = screen.getByRole('link');
 			expect(link).toHaveAttribute('href', '/recipes/recipe-1');
 		});
+	});
 
-		it('should show author username', () => {
-			render(RecipeCard, { props: { recipe: baseRecipe } });
-			expect(screen.getByText('by chef')).toBeInTheDocument();
+	describe('gradient placeholder', () => {
+		it('should render a gradient placeholder element', () => {
+			const { container } = render(RecipeCard, { props: { recipe: baseRecipe } });
+			const gradient = container.querySelector('.h-48');
+			expect(gradient).toBeInTheDocument();
+			expect(gradient?.className).toContain('bg-gradient-to-br');
+		});
+
+		it('should produce deterministic gradient for same id', () => {
+			const { container: c1 } = render(RecipeCard, { props: { recipe: baseRecipe } });
+			const { container: c2 } = render(RecipeCard, { props: { recipe: baseRecipe } });
+			const g1 = c1.querySelector('.h-48')?.className;
+			const g2 = c2.querySelector('.h-48')?.className;
+			expect(g1).toBe(g2);
 		});
 	});
 
@@ -72,10 +84,25 @@ describe('RecipeCard', () => {
 	});
 
 	describe('tags display', () => {
-		it('should display all tags', () => {
+		it('should display up to 2 tags', () => {
 			render(RecipeCard, { props: { recipe: baseRecipe } });
 			expect(screen.getByText('quick')).toBeInTheDocument();
 			expect(screen.getByText('easy')).toBeInTheDocument();
+		});
+
+		it('should truncate to max 2 tags', () => {
+			const recipeWithManyTags = {
+				...baseRecipe,
+				tags: [
+					{ id: 'tag-1', name: 'quick', created_at: '2024-01-01T00:00:00Z' },
+					{ id: 'tag-2', name: 'easy', created_at: '2024-01-01T00:00:00Z' },
+					{ id: 'tag-3', name: 'healthy', created_at: '2024-01-01T00:00:00Z' }
+				]
+			};
+			render(RecipeCard, { props: { recipe: recipeWithManyTags } });
+			expect(screen.getByText('quick')).toBeInTheDocument();
+			expect(screen.getByText('easy')).toBeInTheDocument();
+			expect(screen.queryByText('healthy')).not.toBeInTheDocument();
 		});
 
 		it('should handle empty tags array', () => {
@@ -84,7 +111,6 @@ describe('RecipeCard', () => {
 				tags: []
 			};
 			render(RecipeCard, { props: { recipe: recipeWithoutTags } });
-			// Should render without errors
 			expect(screen.getByText('Test Recipe')).toBeInTheDocument();
 		});
 	});
@@ -92,27 +118,27 @@ describe('RecipeCard', () => {
 	describe('time display', () => {
 		it('should display total time', () => {
 			render(RecipeCard, { props: { recipe: baseRecipe } });
-			expect(screen.getByText('45m total')).toBeInTheDocument();
+			expect(screen.getByText('45m')).toBeInTheDocument();
 		});
 
 		it('should display time in hours and minutes for longer recipes', () => {
 			const longRecipe = {
 				...baseRecipe,
 				prep_time_minutes: 30,
-				cook_time_minutes: 90 // Total: 2h
+				cook_time_minutes: 90
 			};
 			render(RecipeCard, { props: { recipe: longRecipe } });
-			expect(screen.getByText('2h total')).toBeInTheDocument();
+			expect(screen.getByText('2h')).toBeInTheDocument();
 		});
 
 		it('should display hours and minutes for mixed times', () => {
 			const mixedTimeRecipe = {
 				...baseRecipe,
 				prep_time_minutes: 30,
-				cook_time_minutes: 45 // Total: 1h 15m
+				cook_time_minutes: 45
 			};
 			render(RecipeCard, { props: { recipe: mixedTimeRecipe } });
-			expect(screen.getByText('1h 15m total')).toBeInTheDocument();
+			expect(screen.getByText('1h 15m')).toBeInTheDocument();
 		});
 
 		it('should not display time when both are undefined', () => {
@@ -122,7 +148,7 @@ describe('RecipeCard', () => {
 				cook_time_minutes: undefined
 			};
 			render(RecipeCard, { props: { recipe: recipeWithoutTime } });
-			expect(screen.queryByText(/total$/)).not.toBeInTheDocument();
+			expect(screen.queryByText(/^\d+[hm]/)).not.toBeInTheDocument();
 		});
 
 		it('should display time when only prep time is set', () => {
@@ -132,7 +158,7 @@ describe('RecipeCard', () => {
 				cook_time_minutes: undefined
 			};
 			render(RecipeCard, { props: { recipe: prepOnlyRecipe } });
-			expect(screen.getByText('20m total')).toBeInTheDocument();
+			expect(screen.getByText('20m')).toBeInTheDocument();
 		});
 
 		it('should display time when only cook time is set', () => {
@@ -142,7 +168,7 @@ describe('RecipeCard', () => {
 				cook_time_minutes: 45
 			};
 			render(RecipeCard, { props: { recipe: cookOnlyRecipe } });
-			expect(screen.getByText('45m total')).toBeInTheDocument();
+			expect(screen.getByText('45m')).toBeInTheDocument();
 		});
 	});
 
@@ -178,7 +204,6 @@ describe('RecipeCard', () => {
 				description: ''
 			};
 			render(RecipeCard, { props: { recipe: recipeWithEmptyDescription } });
-			// Empty string is falsy, so should not render
 			expect(screen.queryByRole('paragraph')).not.toBeInTheDocument();
 		});
 	});
@@ -187,19 +212,19 @@ describe('RecipeCard', () => {
 		it('should have card styling classes', () => {
 			render(RecipeCard, { props: { recipe: baseRecipe } });
 			const link = screen.getByRole('link');
-			expect(link).toHaveClass('bg-white', 'rounded-lg', 'shadow-sm');
+			expect(link).toHaveClass('bg-white', 'rounded-xl', 'shadow-sm');
 		});
 
 		it('should have category badge styling', () => {
 			render(RecipeCard, { props: { recipe: baseRecipe } });
 			const categoryBadge = screen.getByText('Main Course');
-			expect(categoryBadge).toHaveClass('bg-blue-100', 'text-blue-800');
+			expect(categoryBadge).toHaveClass('bg-primary-100', 'text-primary-700');
 		});
 
 		it('should have tag badge styling', () => {
 			render(RecipeCard, { props: { recipe: baseRecipe } });
 			const tagBadge = screen.getByText('quick');
-			expect(tagBadge).toHaveClass('bg-gray-100', 'text-gray-700');
+			expect(tagBadge).toHaveClass('bg-amber-100', 'text-amber-700');
 		});
 	});
 });

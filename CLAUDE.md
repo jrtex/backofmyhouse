@@ -51,6 +51,11 @@ Use environment variables and `.env` files (excluded via `.gitignore`) for confi
 - Write tests before implementing functionality
 - Ensure all tests pass before considering work complete
 
+### Logging
+- Never pass sensitive data (passwords, API keys, tokens, PII) to logger `extra={}` fields — the JSON formatter includes all extra fields in stdout output
+- Log user IDs (UUIDs) for audit trails, not emails or usernames where avoidable
+- Request/response bodies must not be logged (middleware logs only metadata)
+
 ## File Structure Reference
 
 ```

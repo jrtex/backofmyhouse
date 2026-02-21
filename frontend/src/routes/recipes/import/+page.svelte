@@ -252,7 +252,7 @@
 				aria-controls="image-panel"
 				on:click={() => handleTabChange('image')}
 				class="py-4 px-1 border-b-2 font-medium text-sm {activeTab === 'image'
-					? 'border-blue-500 text-blue-600'
+					? 'border-primary-500 text-primary-600'
 					: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 			>
 				From Image
@@ -264,7 +264,7 @@
 				aria-controls="url-panel"
 				on:click={() => handleTabChange('url')}
 				class="py-4 px-1 border-b-2 font-medium text-sm {activeTab === 'url'
-					? 'border-blue-500 text-blue-600'
+					? 'border-primary-500 text-primary-600'
 					: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 			>
 				From URL
@@ -276,7 +276,7 @@
 				aria-controls="text-panel"
 				on:click={() => handleTabChange('text')}
 				class="py-4 px-1 border-b-2 font-medium text-sm {activeTab === 'text'
-					? 'border-blue-500 text-blue-600'
+					? 'border-primary-500 text-primary-600'
 					: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 			>
 				From Text
@@ -309,7 +309,7 @@
 					on:click={() => document.getElementById('file-input')?.click()}
 					on:keydown={(e) => e.key === 'Enter' && document.getElementById('file-input')?.click()}
 					class="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-						{dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}"
+						{dragOver ? 'border-primary-500 bg-primary-50' : 'border-gray-300 hover:border-gray-400'}"
 				>
 					{#if selectedFile?.type === 'application/pdf'}
 						<div class="flex flex-col items-center">
@@ -364,7 +364,7 @@
 						type="button"
 						on:click={handleImageImport}
 						disabled={loading}
-						class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 rounded-md font-medium"
+						class="mt-4 w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white py-2 rounded-md font-medium"
 					>
 						{loading ? 'Extracting recipe...' : 'Extract Recipe'}
 					</button>
@@ -380,7 +380,7 @@
 						id="url-input"
 						bind:value={urlInput}
 						placeholder="https://example.com/recipe"
-						class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 					/>
 					<p class="mt-2 text-xs text-gray-500">
 						Works best with recipe websites that use structured data (e.g., AllRecipes, Food Network)
@@ -391,7 +391,7 @@
 					type="button"
 					on:click={handleUrlImport}
 					disabled={loading || !urlInput.trim()}
-					class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 rounded-md font-medium"
+					class="mt-4 w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white py-2 rounded-md font-medium"
 				>
 					{loading ? 'Extracting recipe...' : 'Extract Recipe'}
 				</button>
@@ -420,7 +420,7 @@ Instructions:
 2. Mix dry ingredients
 ..."
 						rows="12"
-						class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+						class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm"
 					></textarea>
 					<p class="mt-2 text-xs text-gray-500">
 						Paste any recipe text - from emails, documents, messages, or anywhere else
@@ -431,7 +431,7 @@ Instructions:
 					type="button"
 					on:click={handleTextImport}
 					disabled={loading || !textInput.trim()}
-					class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 rounded-md font-medium"
+					class="mt-4 w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white py-2 rounded-md font-medium"
 				>
 					{loading ? 'Extracting recipe...' : 'Extract Recipe'}
 				</button>
@@ -528,7 +528,7 @@ Instructions:
 				<button
 					type="button"
 					on:click={handleEditAndSave}
-					class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-medium"
+					class="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-md font-medium"
 				>
 					Edit & Save
 				</button>

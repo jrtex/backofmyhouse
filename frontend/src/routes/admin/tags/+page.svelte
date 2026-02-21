@@ -67,7 +67,7 @@
 		<h1 class="text-2xl font-bold text-gray-900">Tags</h1>
 		<button
 			on:click={openCreateForm}
-			class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium"
+			class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md font-medium"
 		>
 			Add Tag
 		</button>
@@ -90,7 +90,7 @@
 						class="w-full px-3 py-2 border rounded-md"
 					/>
 				</div>
-				<button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+				<button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md">
 					Create
 				</button>
 				<button type="button" on:click={closeForm} class="text-gray-600 hover:text-gray-800">
@@ -125,6 +125,6 @@
 	{/if}
 
 	<div class="mt-6">
-		<a href="/admin" class="text-blue-600 hover:underline">&larr; Back to Admin</a>
+		<a href="/admin" class="text-primary-600 hover:underline">&larr; Back to Admin</a>
 	</div>
 </div>

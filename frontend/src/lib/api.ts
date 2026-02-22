@@ -274,11 +274,13 @@ export interface Ingredient {
 	quantity?: string;
 	unit?: string;
 	notes?: string;
+	section?: string;
 }
 
 export interface Instruction {
 	step_number: number;
 	text: string;
+	section?: string;
 }
 
 export type RecipeComplexity = 'very_easy' | 'easy' | 'medium' | 'hard' | 'very_hard';

@@ -31,6 +31,14 @@ class TestIngredient:
         assert ingredient.unit is None
         assert ingredient.notes is None
 
+    def test_section_defaults_to_none(self):
+        ingredient = Ingredient(name="Salt")
+        assert ingredient.section is None
+
+    def test_section_accepts_string(self):
+        ingredient = Ingredient(name="Salt", section="For the sauce")
+        assert ingredient.section == "For the sauce"
+
 
 class TestInstruction:
     def test_valid_instruction(self):
@@ -44,6 +52,14 @@ class TestInstruction:
 
         with pytest.raises(ValidationError):
             Instruction(text="Mix ingredients")
+
+    def test_section_defaults_to_none(self):
+        instruction = Instruction(step_number=1, text="Mix well")
+        assert instruction.section is None
+
+    def test_section_accepts_string(self):
+        instruction = Instruction(step_number=1, text="Mix well", section="For the dough")
+        assert instruction.section == "For the dough"
 
 
 class TestRecipeCreate:
@@ -149,6 +165,39 @@ class TestRecipeCreate:
         with pytest.raises(ValidationError) as exc_info:
             RecipeCreate(title="Test", source_url="https://example.com/" + "a" * 2048)
         assert "at most 2048 characters" in str(exc_info.value)
+
+    def test_sectioned_ingredients_round_trip(self):
+        """Ingredients with section field round-trip through RecipeCreate."""
+        recipe = RecipeCreate(
+            title="Lasagna",
+            ingredients=[
+                {"name": "Ground beef", "quantity": "1", "unit": "lb", "section": "Meat sauce"},
+                {"name": "Tomato sauce", "quantity": "2", "unit": "cups", "section": "Meat sauce"},
+                {"name": "Lasagna noodles", "quantity": "12", "section": "Assembly"},
+                {"name": "Ricotta", "quantity": "2", "unit": "cups", "section": "Assembly"},
+            ],
+            instructions=[
+                {"step_number": 1, "text": "Brown the beef", "section": "Meat sauce"},
+                {"step_number": 2, "text": "Add tomato sauce", "section": "Meat sauce"},
+                {"step_number": 3, "text": "Layer noodles", "section": "Assembly"},
+            ],
+        )
+        assert recipe.ingredients[0].section == "Meat sauce"
+        assert recipe.ingredients[2].section == "Assembly"
+        assert recipe.instructions[0].section == "Meat sauce"
+        assert recipe.instructions[2].section == "Assembly"
+
+    def test_mixed_section_and_no_section(self):
+        """Ingredients can mix items with and without sections."""
+        recipe = RecipeCreate(
+            title="Test",
+            ingredients=[
+                {"name": "Salt", "section": None},
+                {"name": "Beef", "section": "Filling"},
+            ],
+        )
+        assert recipe.ingredients[0].section is None
+        assert recipe.ingredients[1].section == "Filling"
 
     def test_all_new_fields_together(self):
         """Test all new metadata fields can be set together."""

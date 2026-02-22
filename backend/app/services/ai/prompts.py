@@ -21,6 +21,7 @@ Guidelines:
 5. Convert time values to minutes (e.g., "1 hour" = 60 minutes)
 6. If servings are given as a range, use the lower number
 7. Only include special_equipment for items beyond basic kitchen tools
+8. If the recipe has distinct sub-components (e.g., "For the sauce", "For the dough", "For the filling"), set the "section" field on each ingredient and instruction to the sub-component name. Leave section null for recipes without sub-groups.
 
 Confidence scoring:
 - 1.0: All fields clearly visible/stated, no ambiguity
@@ -72,6 +73,10 @@ EXTRACTION_JSON_SCHEMA = {
                         "type": "string",
                         "description": "Preparation notes (e.g., 'chopped', 'melted')",
                     },
+                    "section": {
+                        "type": "string",
+                        "description": "Sub-component name if recipe has distinct sections (e.g., 'For the sauce')",
+                    },
                 },
             },
         },
@@ -90,6 +95,10 @@ EXTRACTION_JSON_SCHEMA = {
                     "text": {
                         "type": "string",
                         "description": "The instruction text",
+                    },
+                    "section": {
+                        "type": "string",
+                        "description": "Sub-component name if recipe has distinct sections (e.g., 'For the sauce')",
                     },
                 },
             },

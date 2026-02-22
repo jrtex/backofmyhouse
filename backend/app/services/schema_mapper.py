@@ -242,14 +242,19 @@ def _parse_instructions(raw_instructions: Any) -> List[Instruction]:
                     step_number += 1
 
             elif item_type == "HowToSection":
-                # Extract steps from nested itemListElement
+                # Extract steps from nested itemListElement, preserving section name
+                section_name = item.get("name")
                 nested_steps = item.get("itemListElement", [])
                 for nested in nested_steps:
                     if isinstance(nested, dict) and nested.get("@type") == "HowToStep":
                         text = nested.get("text", "")
                         if text:
                             instructions.append(
-                                Instruction(step_number=step_number, text=text)
+                                Instruction(
+                                    step_number=step_number,
+                                    text=text,
+                                    section=section_name,
+                                )
                             )
                             step_number += 1
 

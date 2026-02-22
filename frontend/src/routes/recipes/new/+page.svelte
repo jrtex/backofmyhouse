@@ -93,21 +93,47 @@
 		loading = false;
 	});
 
+	function currentSection(items: { section?: string }[], index: number): string | undefined {
+		for (let i = index; i >= 0; i--) {
+			if (items[i].section !== undefined && items[i].section !== '') return items[i].section;
+		}
+		return undefined;
+	}
+
 	function addIngredient() {
-		ingredients = [...ingredients, { name: '', quantity: '', unit: '', notes: '' }];
+		const lastSection = currentSection(ingredients, ingredients.length - 1);
+		ingredients = [...ingredients, { name: '', quantity: '', unit: '', notes: '', section: lastSection }];
 	}
 
 	function removeIngredient(index: number) {
 		ingredients = ingredients.filter((_, i) => i !== index);
 	}
 
+	function addIngredientSection() {
+		const name = prompt('Section name (e.g., "For the sauce"):');
+		if (!name?.trim()) return;
+		ingredients = [...ingredients, { name: '', quantity: '', unit: '', notes: '', section: name.trim() }];
+	}
+
 	function addInstruction() {
-		instructions = [...instructions, { step_number: instructions.length + 1, text: '' }];
+		const lastSection = currentSection(instructions, instructions.length - 1);
+		instructions = [...instructions, { step_number: instructions.length + 1, text: '', section: lastSection }];
 	}
 
 	function removeInstruction(index: number) {
 		instructions = instructions.filter((_, i) => i !== index);
 		instructions = instructions.map((inst, i) => ({ ...inst, step_number: i + 1 }));
+	}
+
+	function addInstructionSection() {
+		const name = prompt('Section name (e.g., "For the sauce"):');
+		if (!name?.trim()) return;
+		instructions = [...instructions, { step_number: instructions.length + 1, text: '', section: name.trim() }];
+	}
+
+	function isNewSection(items: { section?: string }[], index: number): boolean {
+		if (index === 0) return !!items[0].section;
+		return !!items[index].section && items[index].section !== items[index - 1].section;
 	}
 
 	function toggleTag(tagId: string) {
@@ -130,8 +156,12 @@
 		error = '';
 		saving = true;
 
-		const filteredIngredients = ingredients.filter((ing) => ing.name.trim());
-		const filteredInstructions = instructions.filter((inst) => inst.text.trim());
+		const filteredIngredients = ingredients
+			.filter((ing) => ing.name.trim())
+			.map((ing) => ({ ...ing, section: ing.section?.trim() || undefined }));
+		const filteredInstructions = instructions
+			.filter((inst) => inst.text.trim())
+			.map((inst) => ({ ...inst, section: inst.section?.trim() || undefined }));
 		const filteredEquipment = special_equipment.filter((eq) => eq.trim());
 
 		const recipeData = {
@@ -272,15 +302,34 @@
 			<div class="mb-4">
 				<div class="flex justify-between items-center mb-2">
 					<label class="block text-sm font-medium text-gray-700">Ingredients</label>
-					<button
-						type="button"
-						on:click={addIngredient}
-						class="text-sm text-blue-600 hover:underline"
-					>
-						+ Add Ingredient
-					</button>
+					<div class="flex gap-3">
+						<button
+							type="button"
+							on:click={addIngredientSection}
+							class="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+						>
+							+ Add Section
+						</button>
+						<button
+							type="button"
+							on:click={addIngredient}
+							class="text-sm text-blue-600 hover:underline"
+						>
+							+ Add Ingredient
+						</button>
+					</div>
 				</div>
 				{#each ingredients as ing, i}
+					{#if isNewSection(ingredients, i)}
+						<div class="flex items-center gap-2 mt-3 mb-1">
+							<input
+								type="text"
+								bind:value={ing.section}
+								placeholder="Section name"
+								class="text-xs font-semibold text-gray-500 uppercase tracking-wide bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none px-1 py-0.5 flex-1"
+							/>
+						</div>
+					{/if}
 					<div class="flex gap-2 mb-2">
 						<input
 							type="text"
@@ -322,15 +371,34 @@
 			<div class="mb-4">
 				<div class="flex justify-between items-center mb-2">
 					<label class="block text-sm font-medium text-gray-700">Instructions</label>
-					<button
-						type="button"
-						on:click={addInstruction}
-						class="text-sm text-blue-600 hover:underline"
-					>
-						+ Add Step
-					</button>
+					<div class="flex gap-3">
+						<button
+							type="button"
+							on:click={addInstructionSection}
+							class="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+						>
+							+ Add Section
+						</button>
+						<button
+							type="button"
+							on:click={addInstruction}
+							class="text-sm text-blue-600 hover:underline"
+						>
+							+ Add Step
+						</button>
+					</div>
 				</div>
 				{#each instructions as inst, i}
+					{#if isNewSection(instructions, i)}
+						<div class="flex items-center gap-2 mt-3 mb-1">
+							<input
+								type="text"
+								bind:value={inst.section}
+								placeholder="Section name"
+								class="text-xs font-semibold text-gray-500 uppercase tracking-wide bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none px-1 py-0.5 flex-1"
+							/>
+						</div>
+					{/if}
 					<div class="flex gap-2 mb-2">
 						<span
 							class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-sm flex-shrink-0"

@@ -498,6 +498,7 @@ Instructions:
 				<ul class="text-sm text-gray-600 space-y-1">
 					{#each extraction.ingredients.slice(0, 5) as ing}
 						<li>
+							{#if ing.section}<span class="text-xs text-gray-400 bg-gray-100 rounded px-1 mr-1">{ing.section}</span>{/if}
 							{#if ing.quantity}{ing.quantity}{/if}
 							{#if ing.unit}{ing.unit}{/if}
 							{ing.name}
@@ -516,7 +517,10 @@ Instructions:
 				</h3>
 				<ol class="text-sm text-gray-600 space-y-1 list-decimal list-inside">
 					{#each extraction.instructions.slice(0, 3) as inst}
-						<li class="truncate">{inst.text}</li>
+						<li class="truncate">
+							{#if inst.section}<span class="text-xs text-gray-400 bg-gray-100 rounded px-1 mr-1">{inst.section}</span>{/if}
+							{inst.text}
+						</li>
 					{/each}
 					{#if extraction.instructions.length > 3}
 						<li class="text-gray-400">...and {extraction.instructions.length - 3} more steps</li>

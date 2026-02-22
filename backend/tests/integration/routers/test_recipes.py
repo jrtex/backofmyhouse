@@ -291,6 +291,44 @@ class TestCreateRecipe:
         )
         assert response.status_code == 422
 
+    def test_create_recipe_with_sections(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Create recipe with sectioned ingredients and instructions, verify JSON round-trip."""
+        response = client.post(
+            "/api/recipes",
+            json={
+                "title": "Lasagna",
+                "ingredients": [
+                    {"name": "Ground beef", "quantity": "1", "unit": "lb", "section": "Meat sauce"},
+                    {"name": "Tomato sauce", "quantity": "2", "unit": "cups", "section": "Meat sauce"},
+                    {"name": "Noodles", "quantity": "12", "section": "Assembly"},
+                    {"name": "Ricotta", "quantity": "2", "unit": "cups"},
+                ],
+                "instructions": [
+                    {"step_number": 1, "text": "Brown beef", "section": "Meat sauce"},
+                    {"step_number": 2, "text": "Layer noodles", "section": "Assembly"},
+                    {"step_number": 3, "text": "Bake"},
+                ],
+                "tag_ids": [],
+            },
+            headers=auth_headers,
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["ingredients"][0]["section"] == "Meat sauce"
+        assert data["ingredients"][2]["section"] == "Assembly"
+        assert data["ingredients"][3]["section"] is None
+        assert data["instructions"][0]["section"] == "Meat sauce"
+        assert data["instructions"][2]["section"] is None
+
+        # Read back and verify round-trip
+        get_resp = client.get(f"/api/recipes/{data['id']}", headers=auth_headers)
+        assert get_resp.status_code == 200
+        get_data = get_resp.json()
+        assert get_data["ingredients"][0]["section"] == "Meat sauce"
+        assert get_data["instructions"][1]["section"] == "Assembly"
+
     def test_create_recipe_metadata_fields_optional(
         self, client: TestClient, auth_headers: dict
     ):

@@ -18,7 +18,7 @@ from app.services.ai.prompts import (
 class GeminiProvider(AIProvider):
     """Google Gemini-based recipe extraction."""
 
-    DEFAULT_MODEL = "gemini-2.0-flash"
+    DEFAULT_MODEL = "gemini-2.5-flash"
     provider_name = "gemini"
 
     def __init__(self, api_key: str, model: str | None = None):

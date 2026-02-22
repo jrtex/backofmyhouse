@@ -185,7 +185,7 @@
 
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 	<div class="mb-6">
-		<a href="/admin" class="text-blue-600 hover:text-blue-800 text-sm">&larr; Back to Admin</a>
+		<a href="/admin" class="text-primary-600 hover:text-primary-800 text-sm">&larr; Back to Admin</a>
 	</div>
 
 	<h1 class="text-2xl font-bold text-gray-900 mb-8">Backup & Restore</h1>
@@ -208,7 +208,7 @@
 			<button
 				on:click={startExportSelection}
 				disabled={loadingExportRecipes}
-				class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+				class="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
 			>
 				{loadingExportRecipes ? 'Loading...' : 'Export Recipes'}
 			</button>
@@ -222,7 +222,7 @@
 							type="checkbox"
 							checked={exportSelectAll}
 							on:change={toggleExportSelectAll}
-							class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+							class="h-4 w-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
 						/>
 						<span class="font-medium text-gray-900">Select All</span>
 						<span class="text-sm text-gray-500">
@@ -241,7 +241,7 @@
 								type="checkbox"
 								checked={selectedExportIds.has(recipe.id)}
 								on:change={() => toggleExportRecipe(recipe.id)}
-								class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+								class="h-4 w-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500"
 							/>
 							<span class="text-gray-900">{recipe.title}</span>
 							{#if recipe.category}
@@ -259,7 +259,7 @@
 				<button
 					on:click={handleExportSelected}
 					disabled={selectedExportIds.size === 0}
-					class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+					class="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
 				>
 					Export Selected ({selectedExportIds.size})
 				</button>
@@ -315,7 +315,7 @@
 					type="file"
 					accept=".json"
 					on:change={handleFileSelect}
-					class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+					class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
 				/>
 			</div>
 		{:else if importStep === 'selecting' && parsedBackup}
@@ -433,7 +433,7 @@
 					</div>
 					<div>
 						<dt class="text-sm text-gray-500">Replaced</dt>
-						<dd class="text-lg font-semibold text-blue-600">{importResult.replaced}</dd>
+						<dd class="text-lg font-semibold text-primary-600">{importResult.replaced}</dd>
 					</div>
 					<div>
 						<dt class="text-sm text-gray-500">Errors</dt>

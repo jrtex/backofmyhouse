@@ -165,6 +165,16 @@ export const api = {
 			body: JSON.stringify(data)
 		}),
 
+	// Test Connection
+	testConnection: (provider: AIProvider, apiKey?: string) => {
+		const body: Record<string, string> = { provider };
+		if (apiKey) body.api_key = apiKey;
+		return request<TestConnectionResponse>('/settings/test-connection', {
+			method: 'POST',
+			body: JSON.stringify(body)
+		});
+	},
+
 	// Import
 	importFromImage: async (file: File): Promise<ApiResponse<RecipeExtraction>> => {
 		const formData = new FormData();
@@ -352,6 +362,11 @@ export interface RecipeUpdate {
 }
 
 export type AIProvider = 'openai' | 'anthropic' | 'gemini';
+
+export interface TestConnectionResponse {
+	success: boolean;
+	message: string;
+}
 
 export interface Settings {
 	ai_provider: AIProvider | null;

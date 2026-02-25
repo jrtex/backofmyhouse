@@ -419,6 +419,92 @@ class TestCategoryTagAutoCreation:
         assert len(recipe.tags) == 2
 
 
+class TestSectionSupport:
+    def test_export_recipe_with_sections(self, db: Session):
+        """Export preserves section fields on ingredients and instructions."""
+        user = create_user(db)
+        create_recipe(
+            db,
+            user,
+            title="Sectioned Recipe",
+            ingredients=[
+                {"name": "Beef", "quantity": "1", "unit": "lb", "notes": None, "section": "Filling"},
+                {"name": "Tortillas", "quantity": "8", "unit": None, "notes": None, "section": "Assembly"},
+            ],
+            instructions=[
+                {"step_number": 1, "text": "Cook beef", "section": "Filling"},
+                {"step_number": 2, "text": "Wrap tortillas", "section": "Assembly"},
+            ],
+        )
+
+        result = BackupService.export_recipes(db)
+
+        exported = result.recipes[0]
+        assert exported.ingredients[0].section == "Filling"
+        assert exported.ingredients[1].section == "Assembly"
+        assert exported.instructions[0].section == "Filling"
+        assert exported.instructions[1].section == "Assembly"
+
+    def test_import_recipe_with_sections(self, db: Session):
+        """Import preserves section fields on ingredients and instructions."""
+        user = create_user(db)
+
+        backup = BackupExport(
+            metadata=BackupMetadata(exported_at=datetime.utcnow(), recipe_count=1),
+            recipes=[
+                BackupRecipe(
+                    title="Sectioned Import",
+                    description=None,
+                    ingredients=[
+                        BackupIngredient(name="Flour", quantity="2", unit="cups", section="Dough"),
+                        BackupIngredient(name="Sugar", quantity="1", unit="cup", section="Filling"),
+                    ],
+                    instructions=[
+                        BackupInstruction(step_number=1, text="Make dough", section="Dough"),
+                        BackupInstruction(step_number=2, text="Make filling", section="Filling"),
+                    ],
+                    prep_time_minutes=None,
+                    cook_time_minutes=None,
+                    servings=None,
+                    notes=None,
+                    complexity=None,
+                    special_equipment=None,
+                    source_author=None,
+                    source_url=None,
+                    category_name=None,
+                    tag_names=[],
+                    original_author="test",
+                    created_at=datetime.utcnow(),
+                ),
+            ],
+        )
+
+        result = BackupService.import_recipes(db, backup, user.id, ConflictStrategy.skip)
+        assert result.created == 1
+
+        recipe = db.query(Recipe).filter(Recipe.title == "Sectioned Import").first()
+        assert recipe.ingredients[0]["section"] == "Dough"
+        assert recipe.ingredients[1]["section"] == "Filling"
+        assert recipe.instructions[0]["section"] == "Dough"
+        assert recipe.instructions[1]["section"] == "Filling"
+
+    def test_import_old_format_without_sections(self, db: Session):
+        """Import old-format backup without section fields works (backward compatibility)."""
+        user = create_user(db)
+
+        backup = BackupExport(
+            metadata=BackupMetadata(exported_at=datetime.utcnow(), recipe_count=1),
+            recipes=[create_backup_recipe(title="Old Format Recipe")],
+        )
+
+        result = BackupService.import_recipes(db, backup, user.id, ConflictStrategy.skip)
+        assert result.created == 1
+
+        recipe = db.query(Recipe).filter(Recipe.title == "Old Format Recipe").first()
+        # Old format ingredients should not have section key or it should be None
+        assert recipe.ingredients[0].get("section") is None
+
+
 class TestErrorHandling:
     def test_invalid_complexity_records_error(self, db: Session):
         """Invalid data records error without stopping import."""

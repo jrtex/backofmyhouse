@@ -226,7 +226,7 @@ class TestMapSchemaOrgToExtraction:
         assert "Mix all ingredients" in result.instructions[0].text
 
     def test_handles_howto_section_instructions(self):
-        """Should handle HowToSection format with nested steps."""
+        """Should handle HowToSection format with nested steps and preserve section names."""
         schema_data = {
             "@type": "Recipe",
             "name": "Test",
@@ -253,7 +253,35 @@ class TestMapSchemaOrgToExtraction:
 
         assert len(result.instructions) == 3
         assert result.instructions[0].text == "Preheat oven."
+        assert result.instructions[0].section == "Prepare"
+        assert result.instructions[1].section == "Prepare"
         assert result.instructions[2].text == "Pour batter."
+        assert result.instructions[2].section == "Bake"
+
+    def test_mixed_section_and_plain_instructions(self):
+        """Should handle mix of HowToSection and plain HowToStep instructions."""
+        schema_data = {
+            "@type": "Recipe",
+            "name": "Test",
+            "recipeInstructions": [
+                {"@type": "HowToStep", "text": "Gather ingredients."},
+                {
+                    "@type": "HowToSection",
+                    "name": "Make the sauce",
+                    "itemListElement": [
+                        {"@type": "HowToStep", "text": "Heat oil."},
+                        {"@type": "HowToStep", "text": "Add tomatoes."},
+                    ],
+                },
+            ],
+        }
+
+        result = map_schema_org_to_extraction(schema_data)
+
+        assert len(result.instructions) == 3
+        assert result.instructions[0].section is None
+        assert result.instructions[1].section == "Make the sauce"
+        assert result.instructions[2].section == "Make the sauce"
 
     def test_extracts_servings_from_yield_number(self):
         """Should extract number from recipeYield."""

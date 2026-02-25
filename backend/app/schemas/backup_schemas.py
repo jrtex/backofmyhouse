@@ -9,11 +9,13 @@ class BackupIngredient(BaseModel):
     quantity: Optional[str] = None
     unit: Optional[str] = None
     notes: Optional[str] = None
+    section: Optional[str] = None
 
 
 class BackupInstruction(BaseModel):
     step_number: int
     text: str
+    section: Optional[str] = None
 
 
 class BackupRecipe(BaseModel):

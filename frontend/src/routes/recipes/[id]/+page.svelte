@@ -71,6 +71,22 @@
 			recipe.source_url
 		);
 	}
+
+	type SectionGroup<T> = { section: string | null; items: T[] };
+
+	function groupBySection<T extends { section?: string }>(items: T[]): SectionGroup<T>[] {
+		const groups: SectionGroup<T>[] = [];
+		for (const item of items) {
+			const section = item.section ?? null;
+			const last = groups[groups.length - 1];
+			if (last && last.section === section) {
+				last.items.push(item);
+			} else {
+				groups.push({ section, items: [item] });
+			}
+		}
+		return groups;
+	}
 </script>
 
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -163,6 +179,30 @@
 				<div>
 					<h2 class="text-xl font-semibold mb-4">Ingredients</h2>
 					{#if recipe.ingredients.length > 0}
+						{#each groupBySection(recipe.ingredients) as group}
+							{#if group.section}
+								<h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">{group.section}</h3>
+							{/if}
+							<ul class="space-y-2">
+								{#each group.items as ing}
+									<li class="flex items-start">
+										<span class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+										<span>
+											{#if ing.quantity}
+												<span class="font-medium">{ing.quantity}</span>
+											{/if}
+											{#if ing.unit}
+												<span>{ing.unit}</span>
+											{/if}
+											{ing.name}
+											{#if ing.notes}
+												<span class="text-gray-500 text-sm">({ing.notes})</span>
+											{/if}
+										</span>
+									</li>
+								{/each}
+							</ul>
+						{/each}
 						<ul class="space-y-2">
 							{#each recipe.ingredients as ing}
 								<li class="flex items-start">
@@ -190,6 +230,23 @@
 				<div>
 					<h2 class="text-xl font-semibold mb-4">Instructions</h2>
 					{#if recipe.instructions.length > 0}
+						{#each groupBySection(recipe.instructions) as group}
+							{#if group.section}
+								<h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mt-4 mb-2">{group.section}</h3>
+							{/if}
+							<ol class="space-y-4">
+								{#each group.items as inst}
+									<li class="flex">
+										<span
+											class="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm mr-3 flex-shrink-0"
+										>
+											{inst.step_number}
+										</span>
+										<span>{inst.text}</span>
+									</li>
+								{/each}
+							</ol>
+						{/each}
 						<ol class="space-y-4">
 							{#each recipe.instructions as inst}
 								<li class="flex">

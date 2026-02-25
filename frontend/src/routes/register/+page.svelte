@@ -72,7 +72,7 @@
 				bind:value={username}
 				required
 				minlength="3"
-				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 			/>
 		</div>
 
@@ -83,7 +83,7 @@
 				id="email"
 				bind:value={email}
 				required
-				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 			/>
 		</div>
 
@@ -95,7 +95,7 @@
 				bind:value={password}
 				required
 				minlength="8"
-				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 			/>
 		</div>
 
@@ -108,21 +108,21 @@
 				id="confirmPassword"
 				bind:value={confirmPassword}
 				required
-				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+				class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 			/>
 		</div>
 
 		<button
 			type="submit"
 			disabled={loading}
-			class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 rounded-md font-medium"
+			class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white py-2 rounded-md font-medium"
 		>
 			{loading ? 'Registering...' : 'Register'}
 		</button>
 
 		<p class="mt-4 text-center text-sm text-gray-600">
 			Already have an account?
-			<a href="/login" class="text-blue-600 hover:underline">Login</a>
+			<a href="/login" class="text-primary-600 hover:underline">Login</a>
 		</p>
 	</form>
 </div>

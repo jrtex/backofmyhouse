@@ -126,7 +126,7 @@
 
 			<div class="flex flex-wrap gap-2 mb-6">
 				{#if recipe.category}
-					<span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+					<span class="bg-primary-100 text-primary-800 px-3 py-1 rounded-full text-sm">
 						{recipe.category.name}
 					</span>
 				{/if}
@@ -158,7 +158,7 @@
 					<button
 						on:click={() => (activeTab = 'main')}
 						class="py-2 px-1 border-b-2 font-medium text-sm {activeTab === 'main'
-							? 'border-blue-500 text-blue-600'
+							? 'border-primary-500 text-primary-600'
 							: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 					>
 						Recipe
@@ -166,7 +166,7 @@
 					<button
 						on:click={() => (activeTab = 'advanced')}
 						class="py-2 px-1 border-b-2 font-medium text-sm {activeTab === 'advanced'
-							? 'border-blue-500 text-blue-600'
+							? 'border-primary-500 text-primary-600'
 							: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
 					>
 						Advanced
@@ -203,6 +203,25 @@
 								{/each}
 							</ul>
 						{/each}
+						<ul class="space-y-2">
+							{#each recipe.ingredients as ing}
+								<li class="flex items-start">
+									<span class="w-2 h-2 bg-primary-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+									<span>
+										{#if ing.quantity}
+											<span class="font-medium">{ing.quantity}</span>
+										{/if}
+										{#if ing.unit}
+											<span>{ing.unit}</span>
+										{/if}
+										{ing.name}
+										{#if ing.notes}
+											<span class="text-gray-500 text-sm">({ing.notes})</span>
+										{/if}
+									</span>
+								</li>
+							{/each}
+						</ul>
 					{:else}
 						<p class="text-gray-500">No ingredients listed</p>
 					{/if}
@@ -228,6 +247,18 @@
 								{/each}
 							</ol>
 						{/each}
+						<ol class="space-y-4">
+							{#each recipe.instructions as inst}
+								<li class="flex">
+									<span
+										class="w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm mr-3 flex-shrink-0"
+									>
+										{inst.step_number}
+									</span>
+									<span>{inst.text}</span>
+								</li>
+							{/each}
+						</ol>
 					{:else}
 						<p class="text-gray-500">No instructions listed</p>
 					{/if}
@@ -260,7 +291,7 @@
 									href={recipe.source_url}
 									target="_blank"
 									rel="noopener noreferrer"
-									class="text-blue-600 hover:underline break-all"
+									class="text-primary-600 hover:underline break-all"
 								>
 									{recipe.source_url}
 								</a>
@@ -294,6 +325,6 @@
 	{/if}
 
 	<div class="mt-6">
-		<a href="/recipes" class="text-blue-600 hover:underline">&larr; Back to recipes</a>
+		<a href="/recipes" class="text-primary-600 hover:underline">&larr; Back to recipes</a>
 	</div>
 </div>

@@ -51,6 +51,93 @@ class TestGetSettings:
         assert data["anthropic_api_key_configured"] is False
 
 
+class TestTestConnection:
+    @patch("app.services.settings.SettingsService.validate_api_key")
+    def test_test_connection_with_provided_key(
+        self, mock_validate, client: TestClient, admin_auth_headers: dict
+    ):
+        """Test connection with a provided API key."""
+        mock_validate.return_value = True
+
+        response = client.post(
+            "/api/settings/test-connection",
+            json={"provider": "openai", "api_key": "sk-test-key"},
+            headers=admin_auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["message"] == "Connection successful"
+
+    @patch("app.services.settings.SettingsService.validate_api_key")
+    def test_test_connection_with_stored_key(
+        self, mock_validate, client: TestClient, admin_auth_headers: dict, db: Session
+    ):
+        """Test connection using stored API key."""
+        mock_validate.return_value = True
+        SettingsService.set_setting(
+            db, SettingsService.OPENAI_API_KEY, "sk-stored", encrypt=True
+        )
+
+        response = client.post(
+            "/api/settings/test-connection",
+            json={"provider": "openai"},
+            headers=admin_auth_headers,
+        )
+        assert response.status_code == 200
+        assert response.json()["success"] is True
+
+    def test_test_connection_no_key_configured(
+        self, client: TestClient, admin_auth_headers: dict
+    ):
+        """Test connection fails when no key is stored and none provided."""
+        response = client.post(
+            "/api/settings/test-connection",
+            json={"provider": "openai"},
+            headers=admin_auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is False
+        assert "No API key configured" in data["message"]
+
+    @patch("app.services.settings.SettingsService.validate_api_key")
+    def test_test_connection_invalid_key(
+        self, mock_validate, client: TestClient, admin_auth_headers: dict
+    ):
+        """Test connection with an invalid API key."""
+        mock_validate.return_value = False
+
+        response = client.post(
+            "/api/settings/test-connection",
+            json={"provider": "openai", "api_key": "invalid"},
+            headers=admin_auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is False
+        assert "Connection failed" in data["message"]
+
+    def test_test_connection_requires_admin(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Standard user cannot test connection."""
+        response = client.post(
+            "/api/settings/test-connection",
+            json={"provider": "openai", "api_key": "sk-test"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 403
+
+    def test_test_connection_requires_auth(self, client: TestClient):
+        """Test connection requires authentication."""
+        response = client.post(
+            "/api/settings/test-connection",
+            json={"provider": "openai", "api_key": "sk-test"},
+        )
+        assert response.status_code == 401
+
+
 class TestUpdateSettings:
     def test_update_ai_provider(
         self, client: TestClient, admin_auth_headers: dict, db: Session
@@ -206,17 +293,17 @@ class TestUpdateSettings:
             "/api/settings",
             json={
                 "openai_model": "gpt-4o",
-                "gemini_model": "gemini-1.5-pro",
+                "gemini_model": "gemini-2.5-pro",
             },
             headers=admin_auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
         assert data["openai_model"] == "gpt-4o"
-        assert data["gemini_model"] == "gemini-1.5-pro"
+        assert data["gemini_model"] == "gemini-2.5-pro"
 
         # Verify persisted
         response = client.get("/api/settings", headers=admin_auth_headers)
         data = response.json()
         assert data["openai_model"] == "gpt-4o"
-        assert data["gemini_model"] == "gemini-1.5-pro"
+        assert data["gemini_model"] == "gemini-2.5-pro"

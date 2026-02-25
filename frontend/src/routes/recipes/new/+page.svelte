@@ -248,7 +248,7 @@
 					id="title"
 					bind:value={title}
 					required
-					class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+					class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 				/>
 			</div>
 
@@ -260,7 +260,7 @@
 					id="description"
 					bind:value={description}
 					rows="3"
-					class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+					class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 				></textarea>
 			</div>
 
@@ -274,7 +274,7 @@
 						id="prep_time"
 						bind:value={prep_time_minutes}
 						min="0"
-						class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 					/>
 				</div>
 				<div>
@@ -286,7 +286,7 @@
 						id="cook_time"
 						bind:value={cook_time_minutes}
 						min="0"
-						class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 					/>
 				</div>
 				<div>
@@ -297,7 +297,7 @@
 						id="servings"
 						bind:value={servings}
 						min="1"
-						class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+						class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 					/>
 				</div>
 			</div>
@@ -307,7 +307,7 @@
 				<select
 					id="category"
 					bind:value={category_id}
-					class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+					class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 				>
 					<option value="">No category</option>
 					{#each categories as category}
@@ -324,7 +324,7 @@
 							type="button"
 							on:click={() => toggleTag(tag.id)}
 							class="px-3 py-1 rounded-full text-sm {selectedTags.includes(tag.id)
-								? 'bg-blue-500 text-white'
+								? 'bg-primary-500 text-white'
 								: 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
 						>
 							{tag.name}
@@ -351,6 +351,49 @@
 						>
 							+ Add Ingredient
 						</button>
+					<button
+						type="button"
+						on:click={addIngredient}
+						class="text-sm text-primary-600 hover:underline"
+					>
+						+ Add Ingredient
+					</button>
+				</div>
+				{#each ingredients as ing, i}
+					<div class="flex gap-2 mb-2">
+						<input
+							type="text"
+							bind:value={ing.quantity}
+							placeholder="Qty"
+							class="w-16 px-2 py-1 border rounded text-sm"
+						/>
+						<input
+							type="text"
+							bind:value={ing.unit}
+							placeholder="Unit"
+							class="w-20 px-2 py-1 border rounded text-sm"
+						/>
+						<input
+							type="text"
+							bind:value={ing.name}
+							placeholder="Ingredient name"
+							class="flex-1 px-2 py-1 border rounded text-sm"
+						/>
+						<input
+							type="text"
+							bind:value={ing.notes}
+							placeholder="Notes"
+							class="w-32 px-2 py-1 border rounded text-sm"
+						/>
+						{#if ingredients.length > 1}
+							<button
+								type="button"
+								on:click={() => removeIngredient(i)}
+								class="text-red-500 hover:text-red-700 px-2"
+							>
+								&times;
+							</button>
+						{/if}
 					</div>
 				</div>
 				<div use:dragHandleZone={{ items: ingredients, flipDurationMs }} on:consider={handleIngredientDnd} on:finalize={handleIngredientDnd}>
@@ -417,6 +460,18 @@
 							type="button"
 							on:click={addInstructionSection}
 							class="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+					<button
+						type="button"
+						on:click={addInstruction}
+						class="text-sm text-primary-600 hover:underline"
+					>
+						+ Add Step
+					</button>
+				</div>
+				{#each instructions as inst, i}
+					<div class="flex gap-2 mb-2">
+						<span
+							class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-sm flex-shrink-0"
 						>
 							+ Add Section
 						</button>
@@ -479,7 +534,7 @@
 					bind:value={notes}
 					rows="3"
 					placeholder="Additional tips, variations, etc."
-					class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+					class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 				></textarea>
 			</div>
 
@@ -495,7 +550,7 @@
 						<select
 							id="complexity"
 							bind:value={complexity}
-							class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 						>
 							{#each complexityOptions as option}
 								<option value={option.value}>{option.label}</option>
@@ -514,7 +569,7 @@
 							id="source_author"
 							bind:value={source_author}
 							placeholder="e.g., Julia Child"
-							class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 						/>
 					</div>
 					<div>
@@ -526,7 +581,7 @@
 							id="source_url"
 							bind:value={source_url}
 							placeholder="e.g., https://example.com/recipe"
-							class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 						/>
 					</div>
 				</div>
@@ -537,7 +592,7 @@
 						<button
 							type="button"
 							on:click={addEquipment}
-							class="text-sm text-blue-600 hover:underline"
+							class="text-sm text-primary-600 hover:underline"
 						>
 							+ Add Equipment
 						</button>
@@ -568,7 +623,7 @@
 				<button
 					type="submit"
 					disabled={saving}
-					class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-2 rounded-md font-medium"
+					class="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white py-2 rounded-md font-medium"
 				>
 					{saving ? 'Saving...' : editId ? 'Update Recipe' : 'Create Recipe'}
 				</button>

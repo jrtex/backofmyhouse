@@ -87,7 +87,7 @@
 		<h1 class="text-2xl font-bold text-gray-900">Categories</h1>
 		<button
 			on:click={openCreateForm}
-			class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium"
+			class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md font-medium"
 		>
 			Add Category
 		</button>
@@ -115,7 +115,7 @@
 				<div class="flex gap-4">
 					<button
 						type="submit"
-						class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
+						class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md"
 					>
 						{editingCategory ? 'Update' : 'Create'}
 					</button>
@@ -155,7 +155,7 @@
 							<td class="px-6 py-4 whitespace-nowrap text-right text-sm">
 								<button
 									on:click={() => openEditForm(category)}
-									class="text-blue-600 hover:underline mr-4"
+									class="text-primary-600 hover:underline mr-4"
 								>
 									Edit
 								</button>
@@ -174,6 +174,6 @@
 	{/if}
 
 	<div class="mt-6">
-		<a href="/admin" class="text-blue-600 hover:underline">&larr; Back to Admin</a>
+		<a href="/admin" class="text-primary-600 hover:underline">&larr; Back to Admin</a>
 	</div>
 </div>

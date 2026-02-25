@@ -131,12 +131,12 @@ class TestGetAIConfig:
         SettingsService.set_setting(
             db, SettingsService.GEMINI_API_KEY, "AIza-secret", encrypt=True
         )
-        SettingsService.set_setting(db, SettingsService.GEMINI_MODEL_KEY, "gemini-1.5-pro")
+        SettingsService.set_setting(db, SettingsService.GEMINI_MODEL_KEY, "gemini-2.5-pro")
 
         result = SettingsService.get_ai_config(db)
         assert result is not None
         assert result.provider == AIProvider.gemini
-        assert result.model == "gemini-1.5-pro"
+        assert result.model == "gemini-2.5-pro"
 
 
 class TestValidateAPIKey:

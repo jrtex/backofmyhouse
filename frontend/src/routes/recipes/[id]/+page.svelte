@@ -203,25 +203,6 @@
 								{/each}
 							</ul>
 						{/each}
-						<ul class="space-y-2">
-							{#each recipe.ingredients as ing}
-								<li class="flex items-start">
-									<span class="w-2 h-2 bg-primary-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-									<span>
-										{#if ing.quantity}
-											<span class="font-medium">{ing.quantity}</span>
-										{/if}
-										{#if ing.unit}
-											<span>{ing.unit}</span>
-										{/if}
-										{ing.name}
-										{#if ing.notes}
-											<span class="text-gray-500 text-sm">({ing.notes})</span>
-										{/if}
-									</span>
-								</li>
-							{/each}
-						</ul>
 					{:else}
 						<p class="text-gray-500">No ingredients listed</p>
 					{/if}
@@ -247,18 +228,6 @@
 								{/each}
 							</ol>
 						{/each}
-						<ol class="space-y-4">
-							{#each recipe.instructions as inst}
-								<li class="flex">
-									<span
-										class="w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm mr-3 flex-shrink-0"
-									>
-										{inst.step_number}
-									</span>
-									<span>{inst.text}</span>
-								</li>
-							{/each}
-						</ol>
 					{:else}
 						<p class="text-gray-500">No instructions listed</p>
 					{/if}

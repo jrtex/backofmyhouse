@@ -351,49 +351,6 @@
 						>
 							+ Add Ingredient
 						</button>
-					<button
-						type="button"
-						on:click={addIngredient}
-						class="text-sm text-primary-600 hover:underline"
-					>
-						+ Add Ingredient
-					</button>
-				</div>
-				{#each ingredients as ing, i}
-					<div class="flex gap-2 mb-2">
-						<input
-							type="text"
-							bind:value={ing.quantity}
-							placeholder="Qty"
-							class="w-16 px-2 py-1 border rounded text-sm"
-						/>
-						<input
-							type="text"
-							bind:value={ing.unit}
-							placeholder="Unit"
-							class="w-20 px-2 py-1 border rounded text-sm"
-						/>
-						<input
-							type="text"
-							bind:value={ing.name}
-							placeholder="Ingredient name"
-							class="flex-1 px-2 py-1 border rounded text-sm"
-						/>
-						<input
-							type="text"
-							bind:value={ing.notes}
-							placeholder="Notes"
-							class="w-32 px-2 py-1 border rounded text-sm"
-						/>
-						{#if ingredients.length > 1}
-							<button
-								type="button"
-								on:click={() => removeIngredient(i)}
-								class="text-red-500 hover:text-red-700 px-2"
-							>
-								&times;
-							</button>
-						{/if}
 					</div>
 				</div>
 				<div use:dragHandleZone={{ items: ingredients, flipDurationMs }} on:consider={handleIngredientDnd} on:finalize={handleIngredientDnd}>
@@ -460,18 +417,6 @@
 							type="button"
 							on:click={addInstructionSection}
 							class="text-sm text-gray-500 hover:text-gray-700 hover:underline"
-					<button
-						type="button"
-						on:click={addInstruction}
-						class="text-sm text-primary-600 hover:underline"
-					>
-						+ Add Step
-					</button>
-				</div>
-				{#each instructions as inst, i}
-					<div class="flex gap-2 mb-2">
-						<span
-							class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-sm flex-shrink-0"
 						>
 							+ Add Section
 						</button>

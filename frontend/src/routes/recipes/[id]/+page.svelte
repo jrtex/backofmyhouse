@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { api, type Recipe } from '$lib/api';
 	import { isAuthenticated, user, isAdmin } from '$lib/stores/auth';
+	import { groupBySection } from '$lib/utils/groupBySection';
 
 	let recipe: Recipe | null = null;
 	let loading = true;
@@ -72,21 +73,6 @@
 		);
 	}
 
-	type SectionGroup<T> = { section: string | null; items: T[] };
-
-	function groupBySection<T extends { section?: string }>(items: T[]): SectionGroup<T>[] {
-		const groups: SectionGroup<T>[] = [];
-		for (const item of items) {
-			const section = item.section ?? null;
-			const last = groups[groups.length - 1];
-			if (last && last.section === section) {
-				last.items.push(item);
-			} else {
-				groups.push({ section, items: [item] });
-			}
-		}
-		return groups;
-	}
 </script>
 
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -152,6 +138,21 @@
 				</div>
 			</div>
 
+			{#if recipe.instructions.length > 0}
+				<div class="mb-6">
+					<a
+						href="/recipes/{recipe.id}/cook"
+						class="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+					>
+						<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+							<path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+						Start Cooking
+					</a>
+				</div>
+			{/if}
+
 			<!-- Tab Navigation -->
 			<div class="border-b border-gray-200 mb-6">
 				<nav class="-mb-px flex space-x-8">
@@ -203,25 +204,6 @@
 								{/each}
 							</ul>
 						{/each}
-						<ul class="space-y-2">
-							{#each recipe.ingredients as ing}
-								<li class="flex items-start">
-									<span class="w-2 h-2 bg-primary-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-									<span>
-										{#if ing.quantity}
-											<span class="font-medium">{ing.quantity}</span>
-										{/if}
-										{#if ing.unit}
-											<span>{ing.unit}</span>
-										{/if}
-										{ing.name}
-										{#if ing.notes}
-											<span class="text-gray-500 text-sm">({ing.notes})</span>
-										{/if}
-									</span>
-								</li>
-							{/each}
-						</ul>
 					{:else}
 						<p class="text-gray-500">No ingredients listed</p>
 					{/if}
@@ -247,18 +229,6 @@
 								{/each}
 							</ol>
 						{/each}
-						<ol class="space-y-4">
-							{#each recipe.instructions as inst}
-								<li class="flex">
-									<span
-										class="w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm mr-3 flex-shrink-0"
-									>
-										{inst.step_number}
-									</span>
-									<span>{inst.text}</span>
-								</li>
-							{/each}
-						</ol>
 					{:else}
 						<p class="text-gray-500">No instructions listed</p>
 					{/if}

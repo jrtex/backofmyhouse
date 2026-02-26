@@ -12,7 +12,7 @@
 	});
 
 	$: currentPath = $page.url.pathname;
-	$: showSidebar = $isAuthenticated && !['/login', '/register'].includes(currentPath);
+	$: showSidebar = $isAuthenticated && !['/login', '/register'].includes(currentPath) && !currentPath.endsWith('/cook');
 </script>
 
 <div class="min-h-screen bg-gray-50">
